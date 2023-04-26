@@ -1,0 +1,6 @@
+*.log
+*.out
+*cache*
+build/
+deps/
+dist/
