@@ -10,8 +10,8 @@ live in your repo:
 ```jsonc
 [
   {
-    "remote": "https://github.com/opensourcecorp/go-common",
-    "version": "v0.2.0", // tag; can also be a short or long commit hash, or the word 'latest'
+    "remote":     "https://github.com/opensourcecorp/go-common",
+    "version":    "v0.2.0", // tag; can also be a short or long commit hash, or the word 'latest'
     "local_path": "./deps/go-common"
   }
 ]
