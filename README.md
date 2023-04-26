@@ -7,7 +7,7 @@ To get started, you'll need a `vdm` spec file, which is just a JSON array of all
 your external dependencies along with their revisions & where you want them to
 live in your repo:
 
-```json
+```jsonc
 [
   {
     "remote": "https://github.com/opensourcecorp/go-common",
