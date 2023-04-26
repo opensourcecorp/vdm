@@ -79,7 +79,7 @@ func main() {
 	}
 
 	for _, spec := range specs {
-		err = spec.Validate(runFlags)
+		err := spec.Validate(runFlags)
 		if err != nil {
 			errLogger.Fatalf("your vdm spec file is malformed: %v", err)
 		}
