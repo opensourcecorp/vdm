@@ -1,6 +1,5 @@
 SHELL = /usr/bin/env bash -euo pipefail
 
-PKGNAME := vdm
 BINNAME := vdm
 
 all: test clean
@@ -37,16 +36,18 @@ package: xbuild
 	@cd build || exit 1; \
 	for built in * ; do \
 		printf 'Packaging for %s into dist/ ...\n' "$${built}" ; \
-		cd $${built} && tar -czf ../../dist/$(PKGNAME)_$${built}.tar.gz * && cd - >/dev/null ; \
+		cd $${built} && tar -czf ../../dist/$(BINNAME)_$${built}.tar.gz * && cd - >/dev/null ; \
 	done
 
 clean:
 	@rm -rf \
-		/tmp/$(PKGNAME)-tests \
+		/tmp/$(BINNAME)-tests \
 		*cache* \
 		.*cache* \
-		build/ \
-		dist/
+		./build/ \
+		./dist/ \
+		./deps/ \
+		./testdata/deps/
 
 # Some targets that help set up local workstations with rhad tooling. Assumes
 # ~/.local/bin is on $PATH
