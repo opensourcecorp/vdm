@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -8,12 +9,14 @@ import (
 )
 
 func TestSync(t *testing.T) {
+	ctx := context.Background()
+
 	const testVDMRoot = "./testdata"
 	specFilePath := filepath.Join(testVDMRoot, ".vdm")
 
-	specs := getSpecsFromFile(specFilePath, runFlags{SpecFilePath: specFilePath})
+	specs := getSpecsFromFile(ctx, specFilePath)
 
-	sync(specs)
+	sync(ctx, specs)
 
 	t.Run("spec[0] used a tag", func(t *testing.T) {
 		vdmMeta := specs[0].getVDMMeta()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,7 +9,7 @@ import (
 )
 
 // sync ensures that the only local dependencies are ones defined in the specfile
-func sync(specs []vdmSpec) {
+func sync(ctx context.Context, specs []vdmSpec) {
 	for _, spec := range specs {
 		// Common log line prefix
 		operationMsg := fmt.Sprintf("%s@%s --> %s", spec.Remote, spec.Version, spec.LocalPath)
@@ -21,19 +22,19 @@ func sync(specs []vdmSpec) {
 			if vdmMeta.Version != spec.Version {
 				infoLogger.Printf("Changing '%s' from current local version spec '%s' to '%s'...", spec.Remote, vdmMeta.Version, spec.Version)
 			} else {
-				if debug {
+				if isDebug(ctx) {
 					debugLogger.Printf("Version unchanged (%s) in specfile for '%s' --> '%s'", spec.Version, spec.Remote, spec.LocalPath)
 				}
 			}
 		}
 
 		// TODO: pull this up so that it only runs if the version changed or the user requested a wipe
-		if debug {
+		if isDebug(ctx) {
 			debugLogger.Printf("removing any old data for '%s'", spec.LocalPath)
 		}
 		os.RemoveAll(spec.LocalPath)
 
-		gitClone(spec, operationMsg)
+		gitClone(ctx, spec, operationMsg)
 
 		if spec.Version != "latest" {
 			infoLogger.Printf("%s -- Setting specified version...", operationMsg)
@@ -44,7 +45,7 @@ func sync(specs []vdmSpec) {
 			}
 		}
 
-		if debug {
+		if isDebug(ctx) {
 			debugLogger.Printf("removing .git dir for local path '%s'", spec.LocalPath)
 		}
 		os.RemoveAll(filepath.Join(spec.LocalPath, ".git"))
@@ -58,18 +59,18 @@ func sync(specs []vdmSpec) {
 	}
 }
 
-func gitClone(spec vdmSpec, operationMsg string) {
+func gitClone(ctx context.Context, spec vdmSpec, operationMsg string) {
 	// If users want "latest", then we can just do a depth-one clone and
 	// skip the checkout operation. But if they want non-latest, we need the
 	// full history to be able to find a specified revision
 	var cloneCmdArgs []string
 	if spec.Version == "latest" {
-		if debug {
+		if isDebug(ctx) {
 			debugLogger.Printf("%s -- version specified as 'latest', so making shallow clone and skipping separate checkout operation", operationMsg)
 		}
 		cloneCmdArgs = []string{"clone", "--depth=1", spec.Remote, spec.LocalPath}
 	} else {
-		if debug {
+		if isDebug(ctx) {
 			debugLogger.Printf("%s -- version specified as NOT latest, so making regular clone and will make separate checkout operation", operationMsg)
 		}
 		cloneCmdArgs = []string{"clone", spec.Remote, spec.LocalPath}

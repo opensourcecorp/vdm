@@ -1,19 +1,22 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValidate(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("passes", func(t *testing.T) {
 		spec := vdmSpec{
 			Remote:    "https://some-remote",
 			Version:   "v1.0.0",
 			LocalPath: "./deps/some-remote",
 		}
-		err := spec.Validate()
+		err := spec.Validate(ctx)
 		assert.NoError(t, err)
 	})
 
@@ -23,7 +26,7 @@ func TestValidate(t *testing.T) {
 			Version:   "v1.0.0",
 			LocalPath: "./deps/some-remote",
 		}
-		err := spec.Validate()
+		err := spec.Validate(ctx)
 		assert.Error(t, err)
 	})
 
@@ -33,7 +36,7 @@ func TestValidate(t *testing.T) {
 			Version:   "v1.0.0",
 			LocalPath: "./deps/some-remote",
 		}
-		err := spec.Validate()
+		err := spec.Validate(ctx)
 		assert.Error(t, err)
 	})
 
@@ -43,7 +46,7 @@ func TestValidate(t *testing.T) {
 			Version:   "",
 			LocalPath: "./deps/some-remote",
 		}
-		err := spec.Validate()
+		err := spec.Validate(ctx)
 		assert.Error(t, err)
 	})
 
@@ -53,7 +56,7 @@ func TestValidate(t *testing.T) {
 			Version:   "v1.0.0",
 			LocalPath: "",
 		}
-		err := spec.Validate()
+		err := spec.Validate(ctx)
 		assert.Error(t, err)
 	})
 }

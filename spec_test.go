@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,16 +57,12 @@ func TestSpecGetVDMMeta(t *testing.T) {
 
 	t.Run("getSpecsFromFile", func(t *testing.T) {
 		specFilePath := "./testdata/.vdm"
-		runFlags := runFlags{
-			SpecFilePath: "./testdata/.vdm",
-		}
 
-		specs := getSpecsFromFile(specFilePath, runFlags)
+		specs := getSpecsFromFile(context.Background(), specFilePath)
 		assert.Equal(t, 4, len(specs))
 
 		t.Cleanup(func() {
 			os.RemoveAll(testVDMMetaFilePath)
 		})
 	})
-
 }

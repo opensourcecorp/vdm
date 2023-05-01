@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -11,8 +12,6 @@ type vdmSpec struct {
 	Remote    string `json:"remote"`
 	Version   string `json:"version"`
 	LocalPath string `json:"local_path"`
-	// so we can pass these around for each spec
-	runFlags runFlags `json:"-"`
 }
 
 func (spec vdmSpec) writeVDMMeta() error {
@@ -61,13 +60,13 @@ func (spec vdmSpec) getVDMMeta() vdmSpec {
 	return vdmMeta
 }
 
-func getSpecsFromFile(specFilePath string, runFlags runFlags) []vdmSpec {
+func getSpecsFromFile(ctx context.Context, specFilePath string) []vdmSpec {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
-		if debug {
+		if isDebug(ctx) {
 			debugLogger.Printf("error reading specFile from disk: %v", err)
 		}
-		errLogger.Fatalf("There was a problem reading your vdm file from '%s' -- does it not exist?", specFilePath)
+		errLogger.Fatalf("There was a problem reading your vdm file from '%s' -- does it not exist? Either pass the -spec-file flag, or create one in the default location (details in the README)", specFilePath)
 	}
 	if debug {
 		debugLogger.Printf("specFile contents read:\n%s", string(specFile))
@@ -76,17 +75,13 @@ func getSpecsFromFile(specFilePath string, runFlags runFlags) []vdmSpec {
 	var specs []vdmSpec
 	err = json.Unmarshal(specFile, &specs)
 	if err != nil {
-		if debug {
+		if isDebug(ctx) {
 			debugLogger.Printf("error during specFile unmarshal: %v", err)
 		}
 		errLogger.Fatal("There was a problem reading the contents of your vdm spec file")
 	}
-	if debug {
+	if isDebug(ctx) {
 		debugLogger.Printf("vdmSpecs unmarshalled: %+v", specs)
-	}
-
-	for _, spec := range specs {
-		spec.runFlags = runFlags
 	}
 
 	return specs

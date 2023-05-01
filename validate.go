@@ -1,15 +1,16 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
 )
 
-func (spec vdmSpec) Validate() error {
+func (spec vdmSpec) Validate(ctx context.Context) error {
 	var allErrors []error
 
-	if spec.runFlags.Debug {
+	if isDebug(ctx) {
 		debugLogger.Printf("validating field 'Remote' for %+v", spec)
 	}
 	if len(spec.Remote) == 0 {
@@ -23,14 +24,14 @@ func (spec vdmSpec) Validate() error {
 		)
 	}
 
-	if spec.runFlags.Debug {
+	if isDebug(ctx) {
 		debugLogger.Printf("validating field 'Version' for %+v", spec)
 	}
 	if len(spec.Version) == 0 {
 		allErrors = append(allErrors, errors.New("all 'version' fields must be non-zero length. If you don't care about the version (even though you should), then use 'latest'"))
 	}
 
-	if spec.runFlags.Debug {
+	if isDebug(ctx) {
 		debugLogger.Printf("validating field 'LocalPath' for %+v", spec)
 	}
 	if len(spec.LocalPath) == 0 {
