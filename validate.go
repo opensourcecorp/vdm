@@ -6,10 +6,10 @@ import (
 	"regexp"
 )
 
-func (spec depSpec) Validate(r runFlags) error {
+func (spec vdmSpec) Validate() error {
 	var allErrors []error
 
-	if r.Debug {
+	if spec.runFlags.Debug {
 		debugLogger.Printf("validating field 'Remote' for %+v", spec)
 	}
 	if len(spec.Remote) == 0 {
@@ -23,14 +23,14 @@ func (spec depSpec) Validate(r runFlags) error {
 		)
 	}
 
-	if r.Debug {
+	if spec.runFlags.Debug {
 		debugLogger.Printf("validating field 'Version' for %+v", spec)
 	}
 	if len(spec.Version) == 0 {
 		allErrors = append(allErrors, errors.New("all 'version' fields must be non-zero length. If you don't care about the version (even though you should), then use 'latest'"))
 	}
 
-	if r.Debug {
+	if spec.runFlags.Debug {
 		debugLogger.Printf("validating field 'LocalPath' for %+v", spec)
 	}
 	if len(spec.LocalPath) == 0 {

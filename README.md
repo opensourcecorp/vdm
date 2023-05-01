@@ -1,4 +1,4 @@
-# vdm: VCS Dependency Manager
+# vdm: Versioned Dependency Manager
 
 `vdm` is an alternative to git submodules for managing external dependencies for
 the same reasons, in a more sane way.
@@ -7,15 +7,13 @@ To get started, you'll need a `vdm` spec file, which is just a JSON array of all
 your external dependencies along with their revisions & where you want them to
 live in your repo:
 
-```jsonc
-[
-  {
-    "remote":     "https://github.com/opensourcecorp/go-common",
-    "version":    "v0.2.0", // tag; can also be a short or long commit hash, or the word 'latest'
-    "local_path": "./deps/go-common"
-  }
-]
-```
+    [
+      {
+        "remote":     "https://github.com/opensourcecorp/go-common",
+        "version":    "v0.2.0", // tag; can also be a branch, short or long commit hash, or the word 'latest'
+        "local_path": "./deps/go-common"
+      }
+    ]
 
 You can have as many dependency specifications in that array as you want. By
 default, this spec file is called `.vdm` and lives at the calling location
