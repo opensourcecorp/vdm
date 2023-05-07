@@ -56,7 +56,7 @@ func TestSpecGetVDMMeta(t *testing.T) {
 	})
 
 	t.Run("getSpecsFromFile", func(t *testing.T) {
-		specFilePath := "./testdata/.vdm"
+		specFilePath := "./testdata/vdm.json"
 
 		specs := getSpecsFromFile(context.Background(), specFilePath)
 		assert.Equal(t, 4, len(specs))

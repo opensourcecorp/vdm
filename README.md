@@ -16,7 +16,7 @@ live in your repo:
     ]
 
 You can have as many dependency specifications in that array as you want. By
-default, this spec file is called `.vdm` and lives at the calling location
+default, this spec file is called `vdm.json` and lives at the calling location
 (which is probably your repo's root), but you can call it whatever you want and
 point to it using the `-spec-file` flag to `vdm`.
 

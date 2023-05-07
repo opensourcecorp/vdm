@@ -45,7 +45,7 @@ var (
 // commands
 func registerCommonFlags() {
 	for _, cmd := range subcommands {
-		cmd.StringVar(&specFilePath, "spec-file", "./.vdm", "Path to vdm spec file")
+		cmd.StringVar(&specFilePath, "spec-file", "./vdm.json", "Path to vdm spec file")
 		cmd.BoolVar(&debug, "debug", false, "Print debug logs")
 	}
 }

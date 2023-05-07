@@ -12,7 +12,7 @@ func TestSync(t *testing.T) {
 	ctx := context.Background()
 
 	const testVDMRoot = "./testdata"
-	specFilePath := filepath.Join(testVDMRoot, ".vdm")
+	specFilePath := filepath.Join(testVDMRoot, "vdm.json")
 
 	specs := getSpecsFromFile(ctx, specFilePath)
 
