@@ -16,10 +16,12 @@ type vdmSpec struct {
 
 func (spec vdmSpec) writeVDMMeta() error {
 	metaFilePath := filepath.Join(spec.LocalPath, "VDMMETA")
-	vdmMetaContent, err := json.Marshal(spec)
+	vdmMetaContent, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
 		return err
 	}
+
+	vdmMetaContent = append(vdmMetaContent, []byte("\n")...)
 	os.WriteFile(metaFilePath, vdmMetaContent, 0644)
 
 	return nil

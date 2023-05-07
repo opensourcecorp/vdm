@@ -1,3 +1,4 @@
+*.html
 *.log
 *.out
 *cache*

@@ -8,8 +8,12 @@ all: test clean
 
 test: clean
 	go vet ./...
-	go test -cover ./...
+	go test -cover -coverprofile=./cover.out ./...
 	staticcheck ./...
+
+test-coverage: test
+	go tool cover -html=./cover.out -o cover.html
+	xdg-open ./cover.html
 
 build: clean
 	@mkdir -p build/$$(go env GOOS)-$$(go env GOARCH)
