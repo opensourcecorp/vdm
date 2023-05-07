@@ -20,22 +20,24 @@ default, this spec file is called `vdm.json` and lives at the calling location
 (which is probably your repo's root), but you can call it whatever you want and
 point to it using the `-spec-file` flag to `vdm`.
 
-Then, just run:
+Once you have a spec file, just run:
 
-    vdm
+    vdm sync
 
 and `vdm` will process the spec file, grab your dependencies, put them where
-they belong, and check out the right versions. `vdm` also removes the local
-`.git` directories for each remote, so as to not upset your local Git tree. If
-you want to change the version/revision of a remote, just update your spec file
-and run `vdm` again.
+they belong, and check out the right versions. By default, `vdm sync` also
+removes the local `.git` directories for each remote, so as to not upset your
+local Git tree. If you want to change the version/revision of a remote, just
+update your spec file and run `vdm` again.
+
+If for any reason you want all the deps in the spec file to retain their `.git`
+directories (such as if you're using `vdm` to initialize a new computer with
+actual repos you'd be working in), you can pass the `-keep-git-dir` flag to `vdm
+sync`.
 
 ## Future work
 
-- Make keeping the `.git` directory optional, so people can use it as an "all my
-  repos on a fresh machine" manager. I know I would want this lol.
-
-- Have some kind of sync mechanism, such that if your spec file changes to
+- Make the sync mechanism more robust, such that if your spec file changes to
   remove remotes, they'll get cleaned up automatically.
 
 - Support more than just Git -- but I really don't care that much about this

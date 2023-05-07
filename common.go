@@ -99,7 +99,7 @@ func showRootUsage() {
 	fmt.Printf(`vdm declaratively manages remote dependencies as local directories.
 
 Subcommands:
-	sync	sync local paths based on your vdm specfile
+	sync	sync local paths based on your vdm spec file
 
 `)
 }

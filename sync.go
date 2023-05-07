@@ -23,7 +23,7 @@ func sync(ctx context.Context, specs []vdmSpec) {
 				infoLogger.Printf("Changing '%s' from current local version spec '%s' to '%s'...", spec.Remote, vdmMeta.Version, spec.Version)
 			} else {
 				if isDebug(ctx) {
-					debugLogger.Printf("Version unchanged (%s) in specfile for '%s' --> '%s'", spec.Version, spec.Remote, spec.LocalPath)
+					debugLogger.Printf("Version unchanged (%s) in spec file for '%s' --> '%s'", spec.Version, spec.Remote, spec.LocalPath)
 				}
 			}
 		}
