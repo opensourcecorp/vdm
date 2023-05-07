@@ -28,7 +28,7 @@ and `vdm` will process the spec file, grab your dependencies, put them where
 they belong, and check out the right versions. By default, `vdm sync` also
 removes the local `.git` directories for each remote, so as to not upset your
 local Git tree. If you want to change the version/revision of a remote, just
-update your spec file and run `vdm` again.
+update your spec file and run `vdm sync` again.
 
 If for any reason you want all the deps in the spec file to retain their `.git`
 directories (such as if you're using `vdm` to initialize a new computer with
