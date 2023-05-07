@@ -32,7 +32,7 @@ var (
 	specFilePath string
 
 	// sync CLI flags
-	keepGitDir = syncCmd.Bool("keep-git-dir", false, "should vdm keep the .git directory within git-sourced directories? Most useful if you're using vdm to initialize groups of actual repositories you intend to work in")
+	keepGitDir bool
 
 	// Loggers, which include embedded ANSI color codes
 	infoLogger  = log.New(os.Stderr, fmt.Sprintf("%s%s[vdm]%s ", colorReset, colorInfo, colorReset), 0)
@@ -41,13 +41,17 @@ var (
 	happyLogger = log.New(os.Stderr, fmt.Sprintf("%s%s[vdm]%s ", colorReset, colorHappy, colorReset), 0)
 )
 
-// registerCommonFlags assigns values to flags that should belong to all
-// commands
-func registerCommonFlags() {
+// registerFlags assigns values to flags that should belong to each and/or all
+// command(s)
+func registerFlags() {
+	// common
 	for _, cmd := range subcommands {
 		cmd.StringVar(&specFilePath, "spec-file", "./vdm.json", "Path to vdm spec file")
 		cmd.BoolVar(&debug, "debug", false, "Print debug logs")
 	}
+
+	// sync
+	syncCmd.BoolVar(&keepGitDir, "keep-git-dir", false, "should vdm keep the .git directory within git-sourced directories? Most useful if you're using vdm to initialize groups of actual repositories you intend to work in")
 }
 
 // Linter is mad about using string keys for context.Context, so define empty
@@ -78,9 +82,20 @@ func isDebug(ctx context.Context) bool {
 	return debugVal.(bool)
 }
 
+// shouldKeepGitDir checks against the passed context to determine if the
+// keepGitDir CLI flag was set by the user
+func shouldKeepGitDir(ctx context.Context) bool {
+	keepGitDirVal := ctx.Value(keepGitDirKey{})
+	if keepGitDirVal == nil {
+		return false
+	}
+
+	return keepGitDirVal.(bool)
+}
+
 // rootUsage has help text for the root command, so that users don't get an
 // unhelpful error when forgetting to specify a subcommand
-func rootUsage() {
+func showRootUsage() {
 	fmt.Printf(`vdm declaratively manages remote dependencies as local directories.
 
 Subcommands:
@@ -93,7 +108,7 @@ Subcommands:
 func checkRootUsage(args []string) {
 	helpFlagRegex := regexp.MustCompile(`\-?h(elp)?`)
 	if len(args) == 1 || (len(args) == 2 && helpFlagRegex.MatchString(args[1])) {
-		rootUsage()
+		showRootUsage()
 		errLogger.Fatal("You must provide a command to vdm")
 	}
 }

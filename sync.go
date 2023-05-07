@@ -29,10 +29,12 @@ func sync(ctx context.Context, specs []vdmSpec) {
 		}
 
 		// TODO: pull this up so that it only runs if the version changed or the user requested a wipe
-		if isDebug(ctx) {
-			debugLogger.Printf("removing any old data for '%s'", spec.LocalPath)
+		if !shouldKeepGitDir(ctx) {
+			if isDebug(ctx) {
+				debugLogger.Printf("removing any old data for '%s'", spec.LocalPath)
+			}
+			os.RemoveAll(spec.LocalPath)
 		}
-		os.RemoveAll(spec.LocalPath)
 
 		gitClone(ctx, spec, operationMsg)
 
@@ -45,10 +47,12 @@ func sync(ctx context.Context, specs []vdmSpec) {
 			}
 		}
 
-		if isDebug(ctx) {
-			debugLogger.Printf("removing .git dir for local path '%s'", spec.LocalPath)
+		if !shouldKeepGitDir(ctx) {
+			if isDebug(ctx) {
+				debugLogger.Printf("removing .git dir for local path '%s'", spec.LocalPath)
+			}
+			os.RemoveAll(filepath.Join(spec.LocalPath, ".git"))
 		}
-		os.RemoveAll(filepath.Join(spec.LocalPath, ".git"))
 
 		err := spec.writeVDMMeta()
 		if err != nil {

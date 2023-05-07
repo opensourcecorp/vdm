@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -36,5 +37,33 @@ func TestSync(t *testing.T) {
 	t.Run("spec[4] used a hash", func(t *testing.T) {
 		vdmMeta := specs[3].getVDMMeta()
 		assert.Equal(t, vdmMeta.Version, "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f")
+	})
+
+	t.Cleanup(func() {
+		for _, spec := range specs {
+			os.RemoveAll(spec.LocalPath)
+		}
+	})
+}
+
+func TestShouldKeepGitDir(t *testing.T) {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, keepGitDirKey{}, true)
+
+	const testVDMRoot = "./testdata"
+	specFilePath := filepath.Join(testVDMRoot, "vdm.json")
+
+	specs := getSpecsFromFile(ctx, specFilePath)
+
+	sync(ctx, specs)
+
+	for _, spec := range specs {
+		assert.DirExists(t, filepath.Join(spec.LocalPath, ".git"))
+	}
+
+	t.Cleanup(func() {
+		for _, spec := range specs {
+			os.RemoveAll(spec.LocalPath)
+		}
 	})
 }

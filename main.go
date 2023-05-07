@@ -8,9 +8,10 @@ func main() {
 	checkRootUsage(os.Args)
 	cmd, ok := subcommands[os.Args[1]] // length-guarded already by checkRootUsage() above
 	if !ok {
+		showRootUsage()
 		errLogger.Fatalf("Unrecognized vdm subcommand '%s'", os.Args[1])
 	}
-	registerCommonFlags()
+	registerFlags()
 	cmd.Parse(os.Args[2:])
 
 	ctx := registerContextKeys()
@@ -29,7 +30,13 @@ func main() {
 		}
 	}
 
-	sync(ctx, specs)
+	switch cmd.Name() {
+	case syncCmd.Name():
+		sync(ctx, specs)
+	default: // should never get here since we check above, but still
+		showRootUsage()
+		errLogger.Fatalf("Unrecognized vdm subcommand '%s'", cmd.Name())
+	}
 
 	happyLogger.Print("All done!")
 }
