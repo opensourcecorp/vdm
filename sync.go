@@ -12,7 +12,7 @@ import (
 func sync(ctx context.Context, specs []vdmSpec) {
 	for _, spec := range specs {
 		// Common log line prefix
-		operationMsg := fmt.Sprintf("%s@%s --> %s", spec.Remote, spec.Version, spec.LocalPath)
+		opMsg := fmt.Sprintf("%s@%s --> %s", spec.Remote, spec.Version, spec.LocalPath)
 
 		// process stored VDMMETA so we know what operations to actually perform for existing directories
 		vdmMeta := spec.getVDMMeta()
@@ -28,30 +28,11 @@ func sync(ctx context.Context, specs []vdmSpec) {
 			}
 		}
 
-		// TODO: pull this up so that it only runs if the version changed or the user requested a wipe
-		if !shouldKeepGitDir(ctx) {
-			if isDebug(ctx) {
-				debugLogger.Printf("removing any old data for '%s'", spec.LocalPath)
-			}
-			os.RemoveAll(spec.LocalPath)
-		}
-
-		gitClone(ctx, spec, operationMsg)
-
-		if spec.Version != "latest" {
-			infoLogger.Printf("%s -- Setting specified version...", operationMsg)
-			checkoutCmd := exec.Command("git", "-C", spec.LocalPath, "checkout", spec.Version)
-			checkoutOutput, err := checkoutCmd.CombinedOutput()
-			if err != nil {
-				errLogger.Fatalf("error checking out specified revision: exec error '%v', with output: %s", err, string(checkoutOutput))
-			}
-		}
-
-		if !shouldKeepGitDir(ctx) {
-			if isDebug(ctx) {
-				debugLogger.Printf("removing .git dir for local path '%s'", spec.LocalPath)
-			}
-			os.RemoveAll(filepath.Join(spec.LocalPath, ".git"))
+		switch spec.Type {
+		case "git", "":
+			syncGitRemote(ctx, spec, opMsg)
+		default:
+			errLogger.Fatalf("")
 		}
 
 		err := spec.writeVDMMeta()
@@ -59,7 +40,35 @@ func sync(ctx context.Context, specs []vdmSpec) {
 			errLogger.Fatalf("Could not write VDMMETA file to disk: %v", err)
 		}
 
-		infoLogger.Printf("%s -- Done.", operationMsg)
+		infoLogger.Printf("%s -- Done.", opMsg)
+	}
+}
+
+func syncGitRemote(ctx context.Context, spec vdmSpec, operationMsg string) {
+	// TODO: pull this up so that it only runs if the version changed or the user requested a wipe
+	if !shouldKeepGitDir(ctx) {
+		if isDebug(ctx) {
+			debugLogger.Printf("removing any old data for '%s'", spec.LocalPath)
+		}
+		os.RemoveAll(spec.LocalPath)
+	}
+
+	gitClone(ctx, spec, operationMsg)
+
+	if spec.Version != "latest" {
+		infoLogger.Printf("%s -- Setting specified version...", operationMsg)
+		checkoutCmd := exec.Command("git", "-C", spec.LocalPath, "checkout", spec.Version)
+		checkoutOutput, err := checkoutCmd.CombinedOutput()
+		if err != nil {
+			errLogger.Fatalf("error checking out specified revision: exec error '%v', with output: %s", err, string(checkoutOutput))
+		}
+	}
+
+	if !shouldKeepGitDir(ctx) {
+		if isDebug(ctx) {
+			debugLogger.Printf("removing .git dir for local path '%s'", spec.LocalPath)
+		}
+		os.RemoveAll(filepath.Join(spec.LocalPath, ".git"))
 	}
 }
 

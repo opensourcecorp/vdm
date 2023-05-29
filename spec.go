@@ -12,6 +12,7 @@ type vdmSpec struct {
 	Remote    string `json:"remote"`
 	Version   string `json:"version"`
 	LocalPath string `json:"local_path"`
+	Type      string `json:"type"`
 }
 
 func (spec vdmSpec) writeVDMMeta() error {

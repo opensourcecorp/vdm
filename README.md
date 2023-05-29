@@ -4,14 +4,20 @@
 the same reasons, in a more sane way.
 
 To get started, you'll need a `vdm` spec file, which is just a JSON array of all
-your external dependencies along with their revisions & where you want them to
-live in your repo:
+your external dependencies along with (usually) their revisions & where you want
+them to live in your repo:
 
     [
       {
         "remote":     "https://github.com/opensourcecorp/go-common",
         "version":    "v0.2.0", // tag; can also be a branch, short or long commit hash, or the word 'latest'
-        "local_path": "./deps/go-common"
+        "local_path": "./deps/go-common",
+        "type":       "git" // the default, and so can be omitted
+      },
+      {
+        "remote":     "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto",
+        "local_path": "./deps/http.proto",
+        "type":       "file" // the 'file' type assumes the version is in the remote field itself, so 'version' can be omitted
       }
     ]
 

@@ -1,22 +1,27 @@
 [
   {
-    "remote": "https://github.com/opensourcecorp/go-common",
-    "version": "v0.2.0",
+    "remote":     "https://github.com/opensourcecorp/go-common",
+    "version":    "v0.2.0",
     "local_path": "./deps/go-common-tag"
   },
   {
-    "remote": "https://github.com/opensourcecorp/go-common",
-    "version": "latest",
+    "remote":     "https://github.com/opensourcecorp/go-common",
+    "version":    "latest",
     "local_path": "./deps/go-common-latest"
   },
   {
-    "remote": "https://github.com/opensourcecorp/go-common",
-    "version": "main",
+    "remote":     "https://github.com/opensourcecorp/go-common",
+    "version":    "main",
     "local_path": "./deps/go-common-branch"
   },
   {
-    "remote": "https://github.com/opensourcecorp/go-common",
-    "version": "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f",
+    "remote":     "https://github.com/opensourcecorp/go-common",
+    "version":    "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f",
     "local_path": "./deps/go-common-hash"
+  },
+  {
+    "remote":     "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto",
+    "local_path": "./deps/http.proto",
+    "type":       "file"
   }
 ]
