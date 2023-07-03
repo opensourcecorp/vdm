@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+
+	"github.com/sirupsen/logrus"
 )
 
 func (spec vdmSpec) Validate(ctx context.Context) error {
@@ -12,7 +14,7 @@ func (spec vdmSpec) Validate(ctx context.Context) error {
 
 	// Remote field
 	if isDebug(ctx) {
-		debugLogger.Printf("validating field 'Remote' for %+v", spec)
+		logrus.Debugf("validating field 'Remote' for %+v", spec)
 	}
 	if len(spec.Remote) == 0 {
 		allErrors = append(allErrors, errors.New("all 'remote' fields must be non-zero length"))
@@ -27,18 +29,18 @@ func (spec vdmSpec) Validate(ctx context.Context) error {
 
 	// Version field
 	if isDebug(ctx) {
-		debugLogger.Printf("validating field 'Version' for %+v", spec)
+		logrus.Debugf("validating field 'Version' for %+v", spec)
 	}
 	if spec.Type == "git" && len(spec.Version) == 0 {
 		allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length. If you don't care about the version (even though you probably should), then use 'latest'"))
 	}
 	if spec.Type == "file" && len(spec.Version) > 0 {
-		infoLogger.Printf("NOTE: Remote %s specified as type '%s' but also specified version as '%s'; ignoring version field", spec.Remote, spec.Type, spec.Version)
+		logrus.Infof("NOTE: Remote %s specified as type '%s' but also specified version as '%s'; ignoring version field", spec.Remote, spec.Type, spec.Version)
 	}
 
 	// LocalPath field
 	if isDebug(ctx) {
-		debugLogger.Printf("validating field 'LocalPath' for %+v", spec)
+		logrus.Debugf("validating field 'LocalPath' for %+v", spec)
 	}
 	if len(spec.LocalPath) == 0 {
 		allErrors = append(allErrors, errors.New("all 'local_path' fields must be non-zero length"))
@@ -46,7 +48,7 @@ func (spec vdmSpec) Validate(ctx context.Context) error {
 
 	// Type field
 	if isDebug(ctx) {
-		debugLogger.Printf("validating field 'Version' for %+v", spec)
+		logrus.Debugf("validating field 'Version' for %+v", spec)
 	}
 	typeMap := map[string]struct{}{
 		"git":  {},
@@ -59,7 +61,7 @@ func (spec vdmSpec) Validate(ctx context.Context) error {
 
 	if len(allErrors) > 0 {
 		for _, err := range allErrors {
-			errLogger.Printf("validation failure: %s", err.Error())
+			logrus.Errorf("validation failure: %s", err.Error())
 		}
 		return fmt.Errorf("%d validation failure(s) found in your vdm spec file", len(allErrors))
 	}

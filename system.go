@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"os/exec"
+
+	"github.com/sirupsen/logrus"
 )
 
 func checkGitAvailable(ctx context.Context) error {
@@ -11,12 +13,12 @@ func checkGitAvailable(ctx context.Context) error {
 	sysOutput, err := cmd.CombinedOutput()
 	if err != nil {
 		if isDebug(ctx) {
-			debugLogger.Printf("%s: %s", err.Error(), string(sysOutput))
+			logrus.Debugf("%s: %s", err.Error(), string(sysOutput))
 		}
 		return errors.New("git does not seem to be available on your PATH, so cannot continue")
 	}
 	if isDebug(ctx) {
-		debugLogger.Print("git was found on PATH")
+		logrus.Debug("git was found on PATH")
 	}
 	return nil
 }

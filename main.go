@@ -2,6 +2,8 @@ package main
 
 import (
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -9,14 +11,12 @@ func main() {
 	cmd, ok := subcommands[os.Args[1]] // length-guarded already by checkRootUsage() above
 	if !ok {
 		showRootUsage()
-		errLogger.Fatalf("Unrecognized vdm subcommand '%s'", os.Args[1])
+		logrus.Fatalf("Unrecognized vdm subcommand '%s'", os.Args[1])
 	}
 	registerFlags()
 	cmd.Parse(os.Args[2:])
 
-	ctx := registerContextKeys()
-
-	err := checkGitAvailable(ctx)
+	err := checkGitAvailable(rf)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -26,7 +26,7 @@ func main() {
 	for _, spec := range specs {
 		err := spec.Validate(ctx)
 		if err != nil {
-			errLogger.Fatalf("Your vdm spec file is malformed: %v", err)
+			logrus.Fatalf("Your vdm spec file is malformed: %v", err)
 		}
 	}
 
@@ -35,8 +35,8 @@ func main() {
 		sync(ctx, specs)
 	default: // should never get here since we check above, but still
 		showRootUsage()
-		errLogger.Fatalf("Unrecognized vdm subcommand '%s'", cmd.Name())
+		logrus.Fatalf("Unrecognized vdm subcommand '%s'", cmd.Name())
 	}
 
-	happyLogger.Print("All done!")
+	logrus.Info("All done!")
 }
