@@ -1,22 +1,19 @@
-package main
+package remote
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckAvailable(t *testing.T) {
-	ctx := context.Background()
-
+func TestCheckGitAvailable(t *testing.T) {
 	t.Run("git", func(t *testing.T) {
 		// Host of this test better have git available lol
-		gitAvailable := checkGitAvailable(ctx)
+		gitAvailable := checkGitAvailable()
 		assert.NoError(t, gitAvailable)
 
 		t.Setenv("PATH", "")
-		gitAvailable = checkGitAvailable(ctx)
+		gitAvailable = checkGitAvailable()
 		assert.Error(t, gitAvailable)
 	})
 }

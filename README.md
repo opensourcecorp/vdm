@@ -18,7 +18,7 @@ them to live in your repo:
   {
     "type":       "file", // the 'file' type assumes the version is in the remote field itself, so 'version' can be omitted
     "remote":     "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto",
-    "local_path": "./deps/http.proto"
+    "local_path": "./deps/proto/http/http.proto"
   }
 ]
 ```

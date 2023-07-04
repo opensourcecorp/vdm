@@ -1,7 +1,6 @@
-package main
+package vdmspec
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -9,13 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (spec vdmSpec) Validate(ctx context.Context) error {
+func (spec VDMSpec) Validate() error {
 	var allErrors []error
 
 	// Remote field
-	if isDebug(ctx) {
-		logrus.Debugf("validating field 'Remote' for %+v", spec)
-	}
+	logrus.Debugf("validating field 'Remote' for %+v", spec)
 	if len(spec.Remote) == 0 {
 		allErrors = append(allErrors, errors.New("all 'remote' fields must be non-zero length"))
 	}
@@ -28,9 +25,7 @@ func (spec vdmSpec) Validate(ctx context.Context) error {
 	}
 
 	// Version field
-	if isDebug(ctx) {
-		logrus.Debugf("validating field 'Version' for %+v", spec)
-	}
+	logrus.Debugf("validating field 'Version' for %+v", spec)
 	if spec.Type == "git" && len(spec.Version) == 0 {
 		allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length. If you don't care about the version (even though you probably should), then use 'latest'"))
 	}
@@ -39,17 +34,13 @@ func (spec vdmSpec) Validate(ctx context.Context) error {
 	}
 
 	// LocalPath field
-	if isDebug(ctx) {
-		logrus.Debugf("validating field 'LocalPath' for %+v", spec)
-	}
+	logrus.Debugf("validating field 'LocalPath' for %+v", spec)
 	if len(spec.LocalPath) == 0 {
 		allErrors = append(allErrors, errors.New("all 'local_path' fields must be non-zero length"))
 	}
 
 	// Type field
-	if isDebug(ctx) {
-		logrus.Debugf("validating field 'Version' for %+v", spec)
-	}
+	logrus.Debugf("validating field 'Version' for %+v", spec)
 	typeMap := map[string]struct{}{
 		"git":  {},
 		"":     {}, // also git
