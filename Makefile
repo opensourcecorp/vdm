@@ -56,6 +56,9 @@ clean:
 		./deps/ \
 		./testdata/deps/
 
+pre-commit-hook:
+	cp ./scripts/ci.sh ./.git/hooks/pre-commit
+
 # Some targets that help set up local workstations with rhad tooling. Assumes
 # ~/.local/bin is on $PATH
 add-local-symlinks:
