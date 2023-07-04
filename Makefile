@@ -52,9 +52,9 @@ clean:
 		*cache* \
 		.*cache* \
 		./build/ \
-		./dist/ \
-		./deps/ \
-		./testdata/deps/
+		./dist/
+# TODO: until I sort out the tests to write test data consistently, these deps/ directories can kind of show up anywhere
+	@find . -type d -name '*deps*' -exec rm -rf {}+ \;
 
 pre-commit-hook:
 	cp ./scripts/ci.sh ./.git/hooks/pre-commit

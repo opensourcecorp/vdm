@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -31,7 +32,6 @@ func (spec VDMSpec) WriteVDMMeta() error {
 	logrus.Debugf("writing metadata file to '%s'", metaFilePath)
 	err = os.WriteFile(metaFilePath, vdmMetaContent, 0644)
 	if err != nil {
-		logrus.Debug("error here")
 		return fmt.Errorf("writing metadata file: %w", err)
 	}
 
@@ -68,16 +68,25 @@ func (spec VDMSpec) GetVDMMeta() (VDMSpec, error) {
 func GetSpecsFromFile(specFilePath string) ([]VDMSpec, error) {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
-		logrus.Debugf("error reading specFile from disk: %v", err)
-		logrus.Fatalf("There was a problem reading your vdm file from '%s' -- does it not exist? Either pass the -spec-file flag, or create one in the default location (details in the README)", specFilePath)
+		logrus.Debugf("error reading specfile from disk: %v", err)
+		return nil, fmt.Errorf(
+			strings.Join([]string{
+				"there was a problem reading your vdm file from '%s' -- does it not exist?",
+				"Either pass the -spec-file flag, or create one in the default location (details in the README).",
+				"Error details: %w"},
+				" ",
+			),
+			specFilePath,
+			err,
+		)
 	}
-	logrus.Debugf("specFile contents read:\n%s", string(specFile))
+	logrus.Debugf("specfile contents read:\n%s", string(specFile))
 
 	var specs []VDMSpec
 	err = json.Unmarshal(specFile, &specs)
 	if err != nil {
-		logrus.Debugf("error during specFile unmarshal: %v", err)
-		logrus.Fatal("There was a problem reading the contents of your vdm spec file")
+		logrus.Debugf("error during specfile unmarshal: %v", err)
+		return nil, fmt.Errorf("there was a problem reading the contents of your vdm spec file: %w", err)
 	}
 	logrus.Debugf("vdmSpecs unmarshalled: %+v", specs)
 

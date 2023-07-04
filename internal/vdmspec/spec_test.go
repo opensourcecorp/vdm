@@ -1,43 +1,42 @@
 package vdmspec
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	logrus.SetLevel(logrus.DebugLevel)
-}
+const testVDMRoot = "../../testdata"
+
+var (
+	testVDMMetaFilePath = filepath.Join(testVDMRoot, MetaFileName)
+
+	testSpec = VDMSpec{
+		Remote:    "https://some-remote",
+		Version:   "v1.0.0",
+		LocalPath: testVDMRoot,
+	}
+
+	testSpecFilePath = filepath.Join(testVDMRoot, "vdm.json")
+
+	testVDMMetaContents = fmt.Sprintf(
+		`{"remote": "https://some-remote", "version": "v1.0.0", "local_path": "%s"}`,
+		testVDMRoot,
+	)
+)
 
 func TestVDMMeta(t *testing.T) {
-	const testVDMRoot = "./testdata"
-	testVDMMetaFilePath := filepath.Join(testVDMRoot, MetaFileName)
-
 	t.Run("GetVDMMeta", func(t *testing.T) {
-		spec := VDMSpec{
-			Remote:    "https://some-remote",
-			Version:   "v1.0.0",
-			LocalPath: "./testdata",
-		}
-		vdmMetaContents := `
-		{
-			"remote": "https://some-remote",
-			"version": "v1.0.0",
-			"local_path": "./testdata"
-		}`
-		err := os.WriteFile(testVDMMetaFilePath, []byte(vdmMetaContents), 0644)
-		if err != nil {
-			t.Fatal(err)
-		}
+		err := os.WriteFile(testVDMMetaFilePath, []byte(testVDMMetaContents), 0644)
+		require.NoError(t, err)
 
-		got, err := spec.GetVDMMeta()
+		got, err := testSpec.GetVDMMeta()
 		assert.NoError(t, err)
-		assert.Equal(t, spec, got)
+		assert.Equal(t, testSpec, got)
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
@@ -46,17 +45,16 @@ func TestVDMMeta(t *testing.T) {
 	})
 
 	t.Run("WriteVDMMeta", func(t *testing.T) {
-		spec := VDMSpec{
-			Remote:    "https://some-remote",
-			Version:   "v1.0.0",
-			LocalPath: "./testdata",
-		}
-		err := spec.WriteVDMMeta()
+		// Needs to have parent dir(s) exist for write to work
+		err := os.MkdirAll(testSpec.LocalPath, 0644)
 		require.NoError(t, err)
 
-		got, err := spec.GetVDMMeta()
+		err = testSpec.WriteVDMMeta()
+		require.NoError(t, err)
+
+		got, err := testSpec.GetVDMMeta()
 		assert.NoError(t, err)
-		assert.Equal(t, spec, got)
+		assert.Equal(t, testSpec, got)
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
@@ -65,9 +63,7 @@ func TestVDMMeta(t *testing.T) {
 	})
 
 	t.Run("GetSpecsFromFile", func(t *testing.T) {
-		specFilePath := "./testdata/vdm.json"
-
-		specs, err := GetSpecsFromFile(specFilePath)
+		specs, err := GetSpecsFromFile(testSpecFilePath)
 		assert.NoError(t, err)
 		assert.Equal(t, 5, len(specs))
 

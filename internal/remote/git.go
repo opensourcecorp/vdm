@@ -83,5 +83,6 @@ func SyncGit(spec vdmspec.VDMSpec) error {
 
 // SyncFile is the root of the sync operations for "file" remote types.
 func SyncFile(spec vdmspec.VDMSpec) error {
-	panic("not implemented")
+	logrus.Error("the 'file' type is not yet implemented")
+	return nil
 }
