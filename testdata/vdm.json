@@ -20,8 +20,8 @@
     "local_path": "./deps/go-common-hash"
   },
   {
+    "type":       "file",
     "remote":     "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto",
-    "local_path": "./deps/http.proto",
-    "type":       "file"
+    "local_path": "./deps/http.proto"
   }
 ]

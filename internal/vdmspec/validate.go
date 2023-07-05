@@ -30,7 +30,7 @@ func (spec VDMSpec) Validate() error {
 		allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length. If you don't care about the version (even though you probably should), then use 'latest'"))
 	}
 	if spec.Type == "file" && len(spec.Version) > 0 {
-		logrus.Infof("NOTE: Remote %s specified as type '%s' but also specified version as '%s'; ignoring version field", spec.Remote, spec.Type, spec.Version)
+		logrus.Warnf("NOTE: Remote '%s' specified as type '%s', which does not take explicit version info (you provided '%s'); ignoring version field", spec.Remote, spec.Type, spec.Version)
 	}
 
 	// LocalPath field
@@ -40,11 +40,11 @@ func (spec VDMSpec) Validate() error {
 	}
 
 	// Type field
-	logrus.Debugf("validating field 'Version' for %+v", spec)
-	typeMap := map[string]struct{}{
-		"git":  {},
-		"":     {}, // also git
-		"file": {},
+	logrus.Debugf("validating field 'Type' for %+v", spec)
+	typeMap := map[string]int{
+		"git":  1,
+		"":     2, // also git
+		"file": 3,
 	}
 	if _, ok := typeMap[spec.Type]; !ok {
 		allErrors = append(allErrors, fmt.Errorf("unrecognized remote type '%s'", spec.Type))

@@ -12,10 +12,10 @@ import (
 )
 
 type VDMSpec struct {
+	Type      string `json:"type,omitempty"`
 	Remote    string `json:"remote"`
 	Version   string `json:"version,omitempty"`
 	LocalPath string `json:"local_path"`
-	Type      string `json:"type,omitempty"`
 }
 
 const MetaFileName = "VDMMETA"
@@ -24,8 +24,10 @@ func (spec VDMSpec) MakeMetaFilePath() string {
 	metaFilePath := filepath.Join(spec.LocalPath, MetaFileName)
 	// TODO: this is brittle, but it's the best I can think of right now
 	if spec.Type == "file" {
+		fileDir := filepath.Dir(spec.LocalPath)
+		fileName := filepath.Base(spec.LocalPath)
 		// converts to e.g. 'VDMMETA_http.proto'
-		metaFilePath = fmt.Sprintf("%s_%s", MetaFileName, filepath.Base(spec.LocalPath))
+		metaFilePath = filepath.Join(fileDir, fmt.Sprintf("%s_%s", MetaFileName, fileName))
 	}
 
 	return metaFilePath
@@ -58,7 +60,7 @@ func (spec VDMSpec) GetVDMMeta() (VDMSpec, error) {
 		return VDMSpec{}, fmt.Errorf("couldn't check if %s exists at '%s': %w", MetaFileName, metaFilePath, err)
 	}
 
-	vdmMetaFile, err := os.ReadFile(filepath.Join(spec.LocalPath, MetaFileName))
+	vdmMetaFile, err := os.ReadFile(metaFilePath)
 	if err != nil {
 		logrus.Debugf("error reading VMDMMETA from disk: %v", err)
 		return VDMSpec{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
@@ -107,5 +109,9 @@ func GetSpecsFromFile(specFilePath string) ([]VDMSpec, error) {
 // OpMsg constructs a loggable message outlining the specific operation being
 // performed at the moment
 func (spec VDMSpec) OpMsg() string {
-	return fmt.Sprintf("%s@%s --> %s", spec.Remote, spec.Version, spec.LocalPath)
+	if spec.Version != "" {
+		return fmt.Sprintf("%s@%s --> %s", spec.Remote, spec.Version, spec.LocalPath)
+	} else {
+		return fmt.Sprintf("%s --> %s", spec.Remote, spec.LocalPath)
+	}
 }

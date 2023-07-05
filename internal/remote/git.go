@@ -3,11 +3,39 @@ package remote
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 	"github.com/sirupsen/logrus"
 )
+
+// SyncGit is the root of the sync operations for "git" remote types.
+func SyncGit(spec vdmspec.VDMSpec) error {
+	err := gitClone(spec)
+	if err != nil {
+		return fmt.Errorf("cloing remote: %w", err)
+	}
+
+	if spec.Version != "latest" {
+		logrus.Infof("%s -- Setting specified version...", spec.OpMsg())
+		checkoutCmd := exec.Command("git", "-C", spec.LocalPath, "checkout", spec.Version)
+		checkoutOutput, err := checkoutCmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
+		}
+	}
+
+	logrus.Debugf("removing .git dir for local path '%s'", spec.LocalPath)
+	dotGitPath := filepath.Join(spec.LocalPath, ".git")
+	err = os.RemoveAll(dotGitPath)
+	if err != nil {
+		return fmt.Errorf("removing directory %s: %w", dotGitPath, err)
+	}
+
+	return nil
+}
 
 func checkGitAvailable() error {
 	cmd := exec.Command("git", "--version")
@@ -45,44 +73,5 @@ func gitClone(spec vdmspec.VDMSpec) error {
 		return fmt.Errorf("cloning remote: exec error '%w', with output: %s", err, string(cloneOutput))
 	}
 
-	return nil
-}
-
-// SyncGit is the root of the sync operations for "git" remote types.
-func SyncGit(spec vdmspec.VDMSpec) error {
-	// // TODO: pull this up so that it only runs if the version changed or the user requested a wipe
-	// if !cmd.SyncFlagValues.KeepGitDir {
-	// 	logrus.Debugf("removing any old data for '%s'", spec.LocalPath)
-	// 	os.RemoveAll(spec.LocalPath)
-	// }
-
-	err := gitClone(spec)
-	if err != nil {
-		return fmt.Errorf("cloing remote: %w", err)
-	}
-
-	if spec.Version != "latest" {
-		logrus.Infof("%s -- Setting specified version...", spec.OpMsg())
-		checkoutCmd := exec.Command("git", "-C", spec.LocalPath, "checkout", spec.Version)
-		checkoutOutput, err := checkoutCmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
-		}
-	}
-
-	// if cmd.SyncFlagValues.KeepGitDir {
-	// 	logrus.Debugf("removing .git dir for local path '%s'", spec.LocalPath)
-	// 	err := os.RemoveAll(filepath.Join(spec.LocalPath, ".git"))
-	// 	if err != nil {
-	// 		return fmt.Errorf("removing ")
-	// 	}
-	// }
-
-	return nil
-}
-
-// SyncFile is the root of the sync operations for "file" remote types.
-func SyncFile(spec vdmspec.VDMSpec) error {
-	logrus.Error("the 'file' type is not yet implemented")
 	return nil
 }

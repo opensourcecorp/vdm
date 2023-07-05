@@ -16,7 +16,7 @@ them to live in your repo:
     "version":    "v0.2.0", // tag; can also be a branch, short or long commit hash, or the word 'latest'
   },
   {
-    "type":       "file", // the 'file' type assumes the version is in the remote field itself, so 'version' can be omitted
+    "type":       "file", // the 'file' type assumes the version is in the remote field itself, so 'version' is omitted
     "remote":     "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto",
     "local_path": "./deps/proto/http/http.proto"
   }
@@ -51,14 +51,12 @@ would look like this:
     http.proto
 ```
 
-If for any reason you want all the deps in the spec file to retain their `.git`
-directories (such as if you're using `vdm` to initialize a new computer with
-actual repos you'd be working in), you can pass the `-keep-git-dir` flag to `vdm
-sync`.
-
 ## Future work
 
 - Make the sync mechanism more robust, such that if your spec file changes to
   remove remotes, they'll get cleaned up automatically.
+
+- Add `--keep-git-dir` flag so that `git` remote types don't wipe the `.git`
+  directory at clone-time.
 
 - Support more than just Git

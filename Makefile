@@ -18,7 +18,7 @@ test-coverage: test
 
 build: clean
 	@mkdir -p build/$$(go env GOOS)-$$(go env GOARCH)
-	@go build -o build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME)
+	@go build -o build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME) -ldflags "-s -w"
 
 xbuild: clean
 	@for target in \
@@ -31,10 +31,11 @@ xbuild: clean
 	do \
 		GOOS=$$(echo "$${target}" | cut -d'-' -f1) ; \
 		GOARCH=$$(echo "$${target}" | cut -d'-' -f2) ; \
+		export GOOS GOARCH ; \
 		outdir=build/"$${GOOS}-$${GOARCH}" ; \
 		mkdir -p "$${outdir}" ; \
 		printf "Building for %s-%s into build/ ...\n" "$${GOOS}" "$${GOARCH}" ; \
-		GOOS="$${GOOS}" GOARCH="$${GOARCH}" go build -o "$${outdir}"/$(BINNAME) ; \
+		go build -o "$${outdir}"/$(BINNAME) -ldflags "-s -w" ; \
 	done
 
 package: xbuild
@@ -51,7 +52,7 @@ clean:
 		*cache* \
 		.*cache* \
 		./build/ \
-		./dist/
+		./dist/*.gz
 # TODO: until I sort out the tests to write test data consistently, these deps/
 # directories etc. can kind of show up anywhere
 	@find . -type d -name '*deps*' -exec rm -rf {} +

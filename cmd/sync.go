@@ -16,12 +16,6 @@ var syncCmd = &cobra.Command{
 	RunE:  syncExecute,
 }
 
-type SyncFlags struct {
-	KeepGitDir bool
-}
-
-var SyncFlagValues SyncFlags
-
 func syncExecute(_ *cobra.Command, _ []string) error {
 	if err := sync(); err != nil {
 		return fmt.Errorf("executing sync command: %w", err)
@@ -29,7 +23,8 @@ func syncExecute(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-// sync ensures that the only local dependencies are ones defined in the specfile
+// sync does the heavy lifting to ensure that the local directory tree(s) match
+// the desired state as defined in the specfile.
 func sync() error {
 	specs, err := vdmspec.GetSpecsFromFile(RootFlagValues.SpecFilePath)
 	if err != nil {
@@ -43,6 +38,7 @@ func sync() error {
 		}
 	}
 
+SpecLoop:
 	for _, spec := range specs {
 		// process stored vdm metafile so we know what operations to actually
 		// perform for existing directories
@@ -54,10 +50,12 @@ func sync() error {
 		if vdmMeta == (vdmspec.VDMSpec{}) {
 			logrus.Infof("%s not found at local path '%s' -- will be created", vdmspec.MetaFileName, filepath.Join(spec.LocalPath))
 		} else {
-			if vdmMeta.Version != spec.Version {
-				logrus.Infof("Changing '%s' from current local version spec '%s' to '%s'...", spec.Remote, vdmMeta.Version, spec.Version)
+			if vdmMeta.Version != spec.Version && vdmMeta.Remote != spec.Remote {
+				logrus.Infof("Will change '%s' from current local version spec '%s' to '%s'...", spec.Remote, vdmMeta.Version, spec.Version)
+				panic("not implemented")
 			} else {
-				logrus.Debugf("Version unchanged (%s) in spec file for '%s' --> '%s'", spec.Version, spec.Remote, spec.LocalPath)
+				logrus.Infof("Version unchanged (%s) in spec file for '%s' --> '%s', skipping", spec.Version, spec.Remote, spec.LocalPath)
+				continue SpecLoop
 			}
 		}
 

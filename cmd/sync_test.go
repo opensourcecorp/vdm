@@ -25,28 +25,38 @@ func TestSync(t *testing.T) {
 	err = sync()
 	require.NoError(t, err)
 
-	t.Run("spec[0] used a tag", func(t *testing.T) {
-		vdmMeta, err := specs[0].GetVDMMeta()
-		assert.NoError(t, err)
-		assert.Equal(t, "v0.2.0", vdmMeta.Version)
+	t.Run("SyncGit", func(t *testing.T) {
+		t.Run("spec[0] used a tag", func(t *testing.T) {
+			vdmMeta, err := specs[0].GetVDMMeta()
+			assert.NoError(t, err)
+			assert.Equal(t, "v0.2.0", vdmMeta.Version)
+		})
+
+		t.Run("spec[1] used 'latest'", func(t *testing.T) {
+			vdmMeta, err := specs[1].GetVDMMeta()
+			assert.NoError(t, err)
+			assert.Equal(t, "latest", vdmMeta.Version)
+		})
+
+		t.Run("spec[2] used a branch", func(t *testing.T) {
+			vdmMeta, err := specs[2].GetVDMMeta()
+			assert.NoError(t, err)
+			assert.Equal(t, "main", vdmMeta.Version)
+		})
+
+		t.Run("spec[3] used a hash", func(t *testing.T) {
+			vdmMeta, err := specs[3].GetVDMMeta()
+			assert.NoError(t, err)
+			assert.Equal(t, "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f", vdmMeta.Version)
+		})
 	})
 
-	t.Run("spec[1] used 'latest'", func(t *testing.T) {
-		vdmMeta, err := specs[1].GetVDMMeta()
-		assert.NoError(t, err)
-		assert.Equal(t, "latest", vdmMeta.Version)
-	})
-
-	t.Run("spec[2] used a branch", func(t *testing.T) {
-		vdmMeta, err := specs[2].GetVDMMeta()
-		assert.NoError(t, err)
-		assert.Equal(t, "main", vdmMeta.Version)
-	})
-
-	t.Run("spec[4] used a hash", func(t *testing.T) {
-		vdmMeta, err := specs[3].GetVDMMeta()
-		assert.NoError(t, err)
-		assert.Equal(t, "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f", vdmMeta.Version)
+	t.Run("SyncFile", func(t *testing.T) {
+		t.Run("spec[4] had an implcit version", func(t *testing.T) {
+			vdmMeta, err := specs[4].GetVDMMeta()
+			assert.NoError(t, err)
+			assert.Equal(t, "", vdmMeta.Version)
+		})
 	})
 
 	t.Cleanup(func() {
