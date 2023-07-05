@@ -20,8 +20,19 @@ type VDMSpec struct {
 
 const MetaFileName = "VDMMETA"
 
-func (spec VDMSpec) WriteVDMMeta() error {
+func (spec VDMSpec) MakeMetaFilePath() string {
 	metaFilePath := filepath.Join(spec.LocalPath, MetaFileName)
+	// TODO: this is brittle, but it's the best I can think of right now
+	if spec.Type == "file" {
+		// converts to e.g. 'VDMMETA_http.proto'
+		metaFilePath = fmt.Sprintf("%s_%s", MetaFileName, filepath.Base(spec.LocalPath))
+	}
+
+	return metaFilePath
+}
+
+func (spec VDMSpec) WriteVDMMeta() error {
+	metaFilePath := spec.MakeMetaFilePath()
 	vdmMetaContent, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
 		return fmt.Errorf("writing %s: %w", metaFilePath, err)
@@ -39,7 +50,7 @@ func (spec VDMSpec) WriteVDMMeta() error {
 }
 
 func (spec VDMSpec) GetVDMMeta() (VDMSpec, error) {
-	metaFilePath := filepath.Join(spec.LocalPath, MetaFileName)
+	metaFilePath := spec.MakeMetaFilePath()
 	_, err := os.Stat(metaFilePath)
 	if errors.Is(err, os.ErrNotExist) {
 		return VDMSpec{}, nil // this is ok, because it might literally not exist yet

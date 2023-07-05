@@ -8,12 +8,11 @@ all: test clean
 
 test: clean
 	go vet ./...
-	go test -v ./...
+	go test -cover -coverprofile=./cover.out ./...
 	staticcheck ./...
 	make -s clean
 
 test-coverage: test
-	go test -cover -coverprofile=./cover.out ./...
 	go tool cover -html=./cover.out -o cover.html
 	xdg-open ./cover.html
 
@@ -53,8 +52,10 @@ clean:
 		.*cache* \
 		./build/ \
 		./dist/
-# TODO: until I sort out the tests to write test data consistently, these deps/ directories can kind of show up anywhere
-	@find . -type d -name '*deps*' -exec rm -rf {}+ \;
+# TODO: until I sort out the tests to write test data consistently, these deps/
+# directories etc. can kind of show up anywhere
+	@find . -type d -name '*deps*' -exec rm -rf {} +
+	@find . -type f -name '*VDMMETA*' -delete
 
 pre-commit-hook:
 	cp ./scripts/ci.sh ./.git/hooks/pre-commit
