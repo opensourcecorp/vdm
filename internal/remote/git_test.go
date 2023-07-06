@@ -21,7 +21,8 @@ func getTestGitSpec() vdmspec.VDMSpec {
 
 func TestSyncGit(t *testing.T) {
 	spec := getTestGitSpec()
-	SyncGit(spec)
+	err := SyncGit(spec)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
@@ -65,13 +66,13 @@ func TestGitClone(t *testing.T) {
 
 	t.Run("LocalPath is a directory, not a file", func(t *testing.T) {
 		outDir, err := os.Stat("./deps/go-common")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, outDir.IsDir())
 	})
 
 	t.Run("a known file in the remote exists, and is a file", func(t *testing.T) {
 		sampleFile, err := os.Stat("./deps/go-common/go.mod")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.False(t, sampleFile.IsDir())
 	})
 }
