@@ -2,61 +2,57 @@ SHELL = /usr/bin/env bash -euo pipefail
 
 BINNAME := vdm
 
-all: test clean
+# DO NOT TOUCH -- use `make bump-version oldversion=X newversion=Y`!
+VERSION := 0.4.0
 
-.PHONY: %
+all: test
 
+.PHONY: test
 test: clean
 	go vet ./...
 	go test -cover -coverprofile=./cover.out ./...
 	staticcheck ./...
 	make -s clean
 
+.PHONY: test-coverage
 test-coverage: test
 	go tool cover -html=./cover.out -o cover.html
 	xdg-open ./cover.html
 
+# builds for the current platform only
 build: clean
-	@mkdir -p build/$$(go env GOOS)-$$(go env GOARCH)
-	@go build -o build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME) -ldflags "-s -w"
+	@go build -buildmode=pie -o build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME) -ldflags "-s -w"
 
 xbuild: clean
-	@for target in \
-		darwin-amd64 \
-		linux-amd64 \
-		linux-arm \
-		linux-arm64 \
-		windows-amd64 \
-	; \
-	do \
-		GOOS=$$(echo "$${target}" | cut -d'-' -f1) ; \
-		GOARCH=$$(echo "$${target}" | cut -d'-' -f2) ; \
-		export GOOS GOARCH ; \
-		outdir=build/"$${GOOS}-$${GOARCH}" ; \
-		mkdir -p "$${outdir}" ; \
-		printf "Building for %s-%s into build/ ...\n" "$${GOOS}" "$${GOARCH}" ; \
-		go build -o "$${outdir}"/$(BINNAME) -ldflags "-s -w" ; \
-	done
+	@bash ./scripts/xbuild.sh
 
 package: xbuild
-	@mkdir -p dist
-	@cd build || exit 1; \
-	for built in * ; do \
-		printf 'Packaging for %s into dist/ ...\n' "$${built}" ; \
-		cd $${built} && tar -czf ../../dist/$(BINNAME)_$${built}.tar.gz * && cd - >/dev/null ; \
-	done
+	bash ./scripts/package.sh
 
+package-debian: build
+	@bash ./scripts/package-debian.sh
+
+.PHONY: clean
 clean:
 	@rm -rf \
 		/tmp/$(BINNAME)-tests \
 		*cache* \
 		.*cache* \
 		./build/ \
-		./dist/*.gz
+		./dist/*.gz \
+		./dist/debian/vdm.deb
+	@sudo rm -rf ./dist/debian/vdm/usr
 # TODO: until I sort out the tests to write test data consistently, these deps/
 # directories etc. can kind of show up anywhere
 	@find . -type d -name '*deps*' -exec rm -rf {} +
 	@find . -type f -name '*VDMMETA*' -delete
+
+bump-version: clean
+	@if [[ -z "$(oldversion)" ]] || [[ -z "$(newversion)" ]] ; then printf 'ERROR: "oldversion" and "newversion" must be provided\n' && exit 1 ; fi
+	find . \
+		-type f \
+		-not -path './go.*' \
+		-exec sed -i 's/$(oldversion)/$(newversion)/g' {} \;
 
 pre-commit-hook:
 	cp ./scripts/ci.sh ./.git/hooks/pre-commit
