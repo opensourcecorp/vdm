@@ -6,7 +6,7 @@
 vdm - Manage arbitary remote dependencies for your code
 
 # SYNOPSIS
-**vdm** [*OPTION*]
+**vdm** [*OPTIONS*] COMMAND [*OPTIONS*]
 
 # DESCRIPTION
 **vdm** does some stuff.

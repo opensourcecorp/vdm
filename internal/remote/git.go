@@ -12,7 +12,7 @@ import (
 )
 
 // SyncGit is the root of the sync operations for "git" remote types.
-func SyncGit(spec vdmspec.VDMSpec) error {
+func SyncGit(spec vdmspec.Spec) error {
 	err := gitClone(spec)
 	if err != nil {
 		return fmt.Errorf("cloing remote: %w", err)
@@ -48,7 +48,7 @@ func checkGitAvailable() error {
 	return nil
 }
 
-func gitClone(spec vdmspec.VDMSpec) error {
+func gitClone(spec vdmspec.Spec) error {
 	err := checkGitAvailable()
 	if err != nil {
 		return fmt.Errorf("remote '%s' is a git type, but git may not installed/available on PATH: %w", spec.Remote, err)

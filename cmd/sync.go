@@ -47,7 +47,7 @@ SpecLoop:
 			return fmt.Errorf("getting vdm metadata file for sync: %w", err)
 		}
 
-		if vdmMeta == (vdmspec.VDMSpec{}) {
+		if vdmMeta == (vdmspec.Spec{}) {
 			logrus.Infof("%s not found at local path '%s' -- will be created", vdmspec.MetaFileName, filepath.Join(spec.LocalPath))
 		} else {
 			if vdmMeta.Version != spec.Version && vdmMeta.Remote != spec.Remote {

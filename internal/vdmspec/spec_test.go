@@ -15,7 +15,7 @@ const testVDMRoot = "../../testdata"
 var (
 	testVDMMetaFilePath = filepath.Join(testVDMRoot, MetaFileName)
 
-	testSpec = VDMSpec{
+	testSpec = Spec{
 		Remote:    "https://some-remote",
 		Version:   "v1.0.0",
 		LocalPath: testVDMRoot,

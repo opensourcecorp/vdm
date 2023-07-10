@@ -13,7 +13,7 @@ import (
 )
 
 // SyncFile is the root of the sync operations for "file" remote types.
-func SyncFile(spec vdmspec.VDMSpec) error {
+func SyncFile(spec vdmspec.Spec) error {
 	fileExists, err := checkFileExists(spec)
 	if err != nil {
 		return fmt.Errorf("checking if file exists locally: %w", err)
@@ -32,7 +32,7 @@ func SyncFile(spec vdmspec.VDMSpec) error {
 	return nil
 }
 
-func checkFileExists(spec vdmspec.VDMSpec) (bool, error) {
+func checkFileExists(spec vdmspec.Spec) (bool, error) {
 	fullPath, err := filepath.Abs(spec.LocalPath)
 	if err != nil {
 		return false, fmt.Errorf("determining abspath for file '%s': %w", spec.LocalPath, err)
@@ -48,7 +48,7 @@ func checkFileExists(spec vdmspec.VDMSpec) (bool, error) {
 	return true, nil
 }
 
-func retrieveFile(spec vdmspec.VDMSpec) error {
+func retrieveFile(spec vdmspec.Spec) error {
 	resp, err := http.Get(spec.Remote)
 	if err != nil {
 		return fmt.Errorf("retrieving remote file '%s': %w", spec.Remote, err)

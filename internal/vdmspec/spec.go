@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type VDMSpec struct {
+type Spec struct {
 	Type      string `json:"type,omitempty"`
 	Remote    string `json:"remote"`
 	Version   string `json:"version,omitempty"`
@@ -20,7 +20,7 @@ type VDMSpec struct {
 
 const MetaFileName = "VDMMETA"
 
-func (spec VDMSpec) MakeMetaFilePath() string {
+func (spec Spec) MakeMetaFilePath() string {
 	metaFilePath := filepath.Join(spec.LocalPath, MetaFileName)
 	// TODO: this is brittle, but it's the best I can think of right now
 	if spec.Type == "file" {
@@ -33,7 +33,7 @@ func (spec VDMSpec) MakeMetaFilePath() string {
 	return metaFilePath
 }
 
-func (spec VDMSpec) WriteVDMMeta() error {
+func (spec Spec) WriteVDMMeta() error {
 	metaFilePath := spec.MakeMetaFilePath()
 	vdmMetaContent, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
@@ -51,34 +51,34 @@ func (spec VDMSpec) WriteVDMMeta() error {
 	return nil
 }
 
-func (spec VDMSpec) GetVDMMeta() (VDMSpec, error) {
+func (spec Spec) GetVDMMeta() (Spec, error) {
 	metaFilePath := spec.MakeMetaFilePath()
 	_, err := os.Stat(metaFilePath)
 	if errors.Is(err, os.ErrNotExist) {
-		return VDMSpec{}, nil // this is ok, because it might literally not exist yet
+		return Spec{}, nil // this is ok, because it might literally not exist yet
 	} else if err != nil {
-		return VDMSpec{}, fmt.Errorf("couldn't check if %s exists at '%s': %w", MetaFileName, metaFilePath, err)
+		return Spec{}, fmt.Errorf("couldn't check if %s exists at '%s': %w", MetaFileName, metaFilePath, err)
 	}
 
 	vdmMetaFile, err := os.ReadFile(metaFilePath)
 	if err != nil {
 		logrus.Debugf("error reading VMDMMETA from disk: %v", err)
-		return VDMSpec{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
+		return Spec{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
 	}
 	logrus.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
 
-	var vdmMeta VDMSpec
+	var vdmMeta Spec
 	err = json.Unmarshal(vdmMetaFile, &vdmMeta)
 	if err != nil {
 		logrus.Debugf("error during %s unmarshal: %v", MetaFileName, err)
-		return VDMSpec{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %v", MetaFileName, metaFilePath, err)
+		return Spec{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %v", MetaFileName, metaFilePath, err)
 	}
 	logrus.Debugf("file %s unmarshalled: %+v", MetaFileName, vdmMeta)
 
 	return vdmMeta, nil
 }
 
-func GetSpecsFromFile(specFilePath string) ([]VDMSpec, error) {
+func GetSpecsFromFile(specFilePath string) ([]Spec, error) {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
 		logrus.Debugf("error reading specfile from disk: %v", err)
@@ -95,7 +95,7 @@ func GetSpecsFromFile(specFilePath string) ([]VDMSpec, error) {
 	}
 	logrus.Debugf("specfile contents read:\n%s", string(specFile))
 
-	var specs []VDMSpec
+	var specs []Spec
 	err = json.Unmarshal(specFile, &specs)
 	if err != nil {
 		logrus.Debugf("error during specfile unmarshal: %v", err)
@@ -108,7 +108,7 @@ func GetSpecsFromFile(specFilePath string) ([]VDMSpec, error) {
 
 // OpMsg constructs a loggable message outlining the specific operation being
 // performed at the moment
-func (spec VDMSpec) OpMsg() string {
+func (spec Spec) OpMsg() string {
 	if spec.Version != "" {
 		return fmt.Sprintf("%s@%s --> %s", spec.Remote, spec.Version, spec.LocalPath)
 	} else {

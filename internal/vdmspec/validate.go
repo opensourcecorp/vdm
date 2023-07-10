@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (spec VDMSpec) Validate() error {
+func (spec Spec) Validate() error {
 	var allErrors []error
 
 	// Remote field
@@ -16,7 +16,7 @@ func (spec VDMSpec) Validate() error {
 	if len(spec.Remote) == 0 {
 		allErrors = append(allErrors, errors.New("all 'remote' fields must be non-zero length"))
 	}
-	protocolRegex := regexp.MustCompile(`(https://|git://|git@)`)
+	protocolRegex := regexp.MustCompile(`(http(s?)://|git://|git@)`)
 	if !protocolRegex.MatchString(spec.Remote) {
 		allErrors = append(
 			allErrors,
