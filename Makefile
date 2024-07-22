@@ -5,14 +5,13 @@ BINNAME := vdm
 # DO NOT TOUCH -- use `make bump-version oldversion=X newversion=Y`!
 VERSION := 0.4.0
 
-all: test
+all: test package package-debian
 
 .PHONY: test
 test: clean
 	go vet ./...
 	go test -cover -coverprofile=./cover.out ./...
 	staticcheck ./...
-	make -s clean
 
 .PHONY: test-coverage
 test-coverage: test
@@ -27,7 +26,7 @@ xbuild: clean
 	@bash ./scripts/xbuild.sh
 
 package: xbuild
-	bash ./scripts/package.sh
+	@bash ./scripts/package.sh
 
 package-debian: build
 	@bash ./scripts/package-debian.sh
@@ -40,7 +39,8 @@ clean:
 		.*cache* \
 		./build/ \
 		./dist/*.gz \
-		./dist/debian/vdm.deb
+		./dist/debian/vdm.deb \
+		*.out
 	@sudo rm -rf ./dist/debian/vdm/usr
 # TODO: until I sort out the tests to write test data consistently, these deps/
 # directories etc. can kind of show up anywhere

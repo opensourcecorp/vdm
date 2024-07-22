@@ -10,7 +10,7 @@ import (
 var rootCmd = cobra.Command{
 	Use:              "vdm",
 	Short:            "vdm -- a Versioned-Dependency Manager",
-	Long:             "vdm is used to manage arbitrary remote depdencies in a code repository",
+	Long:             "vdm is used to manage arbitrary remote dependencies",
 	TraverseChildren: true,
 }
 
