@@ -59,9 +59,13 @@ SpecLoop:
 
 		switch remote.Type {
 		case "git", "":
-			remotes.SyncGit(remote)
+			if err := remotes.SyncGit(remote); err != nil {
+				return fmt.Errorf("syncing git remote: %w", err)
+			}
 		case "file":
-			remotes.SyncFile(remote)
+			if err := remotes.SyncFile(remote); err != nil {
+				return fmt.Errorf("syncing file remote: %w", err)
+			}
 		default:
 			return fmt.Errorf("unrecognized remote type '%s'", remote.Type)
 		}

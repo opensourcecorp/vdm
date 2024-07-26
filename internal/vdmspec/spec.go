@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Spec defines the
 type Spec struct {
 	Remotes []Remote `json:"remotes" yaml:"remotes"`
 }

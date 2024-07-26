@@ -12,9 +12,15 @@ if ! go vet ./... ; then
 fi
 
 printf '>> Go linter\n'
-if ! staticcheck ./... ; then
+if ! go run github.com/mgechev/revive@latest --set_exit_status ./... ; then
   printf '>>> Failed go-lint\n'
   failures+=('go-lint')
+fi
+
+printf '>> Go error checker\n'
+if ! go run github.com/kisielk/errcheck@latest ./... ; then
+  printf '>>> Failed go-error-check\n'
+  failures+=('go-error-check')
 fi
 
 printf '>> Go test\n'

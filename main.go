@@ -10,3 +10,5 @@ func main() {
 		message.Fatalf("running vdm: %v", err)
 	}
 }
+
+type ABC struct{}
