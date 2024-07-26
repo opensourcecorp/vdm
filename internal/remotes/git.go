@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
-	"github.com/sirupsen/logrus"
 )
 
 // SyncGit is the root of the sync operations for "git" remote types.
@@ -19,7 +19,7 @@ func SyncGit(remote vdmspec.Remote) error {
 	}
 
 	if remote.Version != "latest" {
-		logrus.Infof("%s -- Setting specified version...", remote.OpMsg())
+		message.Infof("%s -- Setting specified version...", remote.OpMsg())
 		checkoutCmd := exec.Command("git", "-C", remote.LocalPath, "checkout", remote.Version)
 		checkoutOutput, err := checkoutCmd.CombinedOutput()
 		if err != nil {
@@ -27,7 +27,7 @@ func SyncGit(remote vdmspec.Remote) error {
 		}
 	}
 
-	logrus.Debugf("removing .git dir for local path '%s'", remote.LocalPath)
+	message.Debugf("removing .git dir for local path '%s'", remote.LocalPath)
 	dotGitPath := filepath.Join(remote.LocalPath, ".git")
 	err = os.RemoveAll(dotGitPath)
 	if err != nil {
@@ -41,10 +41,10 @@ func checkGitAvailable() error {
 	cmd := exec.Command("git", "--version")
 	sysOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		logrus.Debugf("%s: %s", err.Error(), string(sysOutput))
+		message.Debugf("%s: %s", err.Error(), string(sysOutput))
 		return errors.New("git does not seem to be available on your PATH, so cannot continue")
 	}
-	logrus.Debug("git was found on PATH")
+	message.Debugf("git was found on PATH")
 	return nil
 }
 
@@ -59,14 +59,14 @@ func gitClone(remote vdmspec.Remote) error {
 	// full history to be able to find a specified revision
 	var cloneCmdArgs []string
 	if remote.Version == "latest" {
-		logrus.Debugf("%s -- version specified as 'latest', so making shallow clone and skipping separate checkout operation", remote.OpMsg())
+		message.Debugf("%s -- version specified as 'latest', so making shallow clone and skipping separate checkout operation", remote.OpMsg())
 		cloneCmdArgs = []string{"clone", "--depth=1", remote.Remote, remote.LocalPath}
 	} else {
-		logrus.Debugf("%s -- version specified as NOT latest, so making regular clone and will make separate checkout operation", remote.OpMsg())
+		message.Debugf("%s -- version specified as NOT latest, so making regular clone and will make separate checkout operation", remote.OpMsg())
 		cloneCmdArgs = []string{"clone", remote.Remote, remote.LocalPath}
 	}
 
-	logrus.Infof("%s -- Retrieving...", remote.OpMsg())
+	message.Infof("%s -- Retrieving...", remote.OpMsg())
 	cloneCmd := exec.Command("git", cloneCmdArgs...)
 	cloneOutput, err := cloneCmd.CombinedOutput()
 	if err != nil {

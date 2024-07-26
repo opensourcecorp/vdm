@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/opensourcecorp/vdm/internal/message"
 	"gopkg.in/yaml.v3"
 )
 
@@ -49,7 +49,7 @@ func (r Remote) WriteVDMMeta() error {
 
 	vdmMetaContent = append(vdmMetaContent, []byte("\n")...)
 
-	logrus.Debugf("writing metadata file to '%s'", metaFilePath)
+	message.Debugf("writing metadata file to '%s'", metaFilePath)
 	err = os.WriteFile(metaFilePath, vdmMetaContent, 0644)
 	if err != nil {
 		return fmt.Errorf("writing metadata file: %w", err)
@@ -69,18 +69,18 @@ func (r Remote) GetVDMMeta() (Remote, error) {
 
 	vdmMetaFile, err := os.ReadFile(metaFilePath)
 	if err != nil {
-		logrus.Debugf("error reading VMDMMETA from disk: %v", err)
+		message.Debugf("error reading VMDMMETA from disk: %v", err)
 		return Remote{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
 	}
-	logrus.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
+	message.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
 
 	var vdmMeta Remote
 	err = yaml.Unmarshal(vdmMetaFile, &vdmMeta)
 	if err != nil {
-		logrus.Debugf("error during %s unmarshal: %v", MetaFileName, err)
+		message.Debugf("error during %s unmarshal: %v", MetaFileName, err)
 		return Remote{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %v", MetaFileName, metaFilePath, err)
 	}
-	logrus.Debugf("file %s unmarshalled: %+v", MetaFileName, vdmMeta)
+	message.Debugf("file %s unmarshalled: %+v", MetaFileName, vdmMeta)
 
 	return vdmMeta, nil
 }
@@ -88,7 +88,7 @@ func (r Remote) GetVDMMeta() (Remote, error) {
 func GetSpecFromFile(specFilePath string) (Spec, error) {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
-		logrus.Debugf("error reading specfile from disk: %v", err)
+		message.Debugf("error reading specfile from disk: %v", err)
 		return Spec{}, fmt.Errorf(
 			strings.Join([]string{
 				"there was a problem reading your vdm file from '%s' -- does it not exist?",
@@ -100,15 +100,15 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 			err,
 		)
 	}
-	logrus.Debugf("specfile contents read:\n%s", string(specFile))
+	message.Debugf("specfile contents read:\n%s", string(specFile))
 
 	var spec Spec
 	err = yaml.Unmarshal(specFile, &spec)
 	if err != nil {
-		logrus.Debugf("error during specfile unmarshal: %v", err)
+		message.Debugf("error during specfile unmarshal: %v", err)
 		return Spec{}, fmt.Errorf("there was a problem reading the contents of your vdm spec file: %w", err)
 	}
-	logrus.Debugf("vdmSpecs unmarshalled: %+v", spec)
+	message.Debugf("vdmSpecs unmarshalled: %+v", spec)
 
 	return spec, nil
 }

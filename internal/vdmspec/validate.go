@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/sirupsen/logrus"
+	"github.com/opensourcecorp/vdm/internal/message"
 )
 
 func (spec Spec) Validate() error {
@@ -13,7 +13,7 @@ func (spec Spec) Validate() error {
 
 	for remoteIndex, remote := range spec.Remotes {
 		// Remote field
-		logrus.Debugf("Index %d: validating field 'Remote' for %+v", remoteIndex, remote)
+		message.Debugf("Index %d: validating field 'Remote' for %+v", remoteIndex, remote)
 		if len(remote.Remote) == 0 {
 			allErrors = append(allErrors, errors.New("all 'remote' fields must be non-zero length"))
 		}
@@ -26,22 +26,22 @@ func (spec Spec) Validate() error {
 		}
 
 		// Version field
-		logrus.Debugf("Index %d: validating field 'Version' for %+v", remoteIndex, remote)
+		message.Debugf("Index %d: validating field 'Version' for %+v", remoteIndex, remote)
 		if remote.Type == "git" && len(remote.Version) == 0 {
 			allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length. If you don't care about the version (even though you probably should), then use 'latest'"))
 		}
 		if remote.Type == "file" && len(remote.Version) > 0 {
-			logrus.Warnf("NOTE: Remote #%d '%s' specified as type '%s', which does not take explicit version info (you provided '%s'); ignoring version field", remoteIndex, remote.Remote, remote.Type, remote.Version)
+			message.Warnf("NOTE: Remote #%d '%s' specified as type '%s', which does not take explicit version info (you provided '%s'); ignoring version field", remoteIndex, remote.Remote, remote.Type, remote.Version)
 		}
 
 		// LocalPath field
-		logrus.Debugf("Index #%d: validating field 'LocalPath' for %+v", remoteIndex, remote)
+		message.Debugf("Index #%d: validating field 'LocalPath' for %+v", remoteIndex, remote)
 		if len(remote.LocalPath) == 0 {
 			allErrors = append(allErrors, errors.New("all 'local_path' fields must be non-zero length"))
 		}
 
 		// Type field
-		logrus.Debugf("Index #%d: validating field 'Type' for %+v", remoteIndex, remote)
+		message.Debugf("Index #%d: validating field 'Type' for %+v", remoteIndex, remote)
 		typeMap := map[string]int{
 			"git":  1,
 			"":     2, // also git
@@ -54,7 +54,7 @@ func (spec Spec) Validate() error {
 
 	if len(allErrors) > 0 {
 		for _, err := range allErrors {
-			logrus.Errorf("validation failure: %s", err.Error())
+			message.Errorf("validation failure: %s", err.Error())
 		}
 		return fmt.Errorf("%d validation failure(s) found in your vdm spec file", len(allErrors))
 	}

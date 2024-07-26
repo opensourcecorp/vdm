@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
-	"github.com/sirupsen/logrus"
 )
 
 // SyncFile is the root of the sync operations for "file" remote types.
@@ -20,13 +20,13 @@ func SyncFile(remote vdmspec.Remote) error {
 	}
 
 	if !fileExists {
-		logrus.Infof("File '%s' does not exist locally, retrieving", remote.LocalPath)
+		message.Infof("File '%s' does not exist locally, retrieving", remote.LocalPath)
 		err = retrieveFile(remote)
 		if err != nil {
 			return fmt.Errorf("retrieving file: %w", err)
 		}
 	} else {
-		logrus.Infof("File '%s' already exists locally, skipping", remote.LocalPath)
+		message.Infof("File '%s' already exists locally, skipping", remote.LocalPath)
 	}
 
 	return nil
@@ -55,7 +55,7 @@ func retrieveFile(remote vdmspec.Remote) error {
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			logrus.Errorf("closing response body after remote file '%s' retrieval: %v", remote.Remote, err)
+			message.Errorf("closing response body after remote file '%s' retrieval: %v", remote.Remote, err)
 		}
 	}()
 
@@ -72,7 +72,7 @@ func retrieveFile(remote vdmspec.Remote) error {
 	}
 	defer func() {
 		if closeErr := outFile.Close(); closeErr != nil {
-			logrus.Errorf("closing local file '%s' after remote file '%s' retrieval: %v", remote.LocalPath, remote.Remote, err)
+			message.Errorf("closing local file '%s' after remote file '%s' retrieval: %v", remote.LocalPath, remote.Remote, err)
 		}
 	}()
 
@@ -80,7 +80,7 @@ func retrieveFile(remote vdmspec.Remote) error {
 	if err != nil {
 		return fmt.Errorf("copying HTTP response to disk: ")
 	}
-	logrus.Debugf("wrote %d bytes to '%s'", bytesWritten, remote.LocalPath)
+	message.Debugf("wrote %d bytes to '%s'", bytesWritten, remote.LocalPath)
 
 	return nil
 }

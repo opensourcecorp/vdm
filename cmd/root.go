@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -24,10 +23,6 @@ var RootFlagValues RootFlags
 func init() {
 	rootCmd.PersistentFlags().StringVar(&RootFlagValues.SpecFilePath, "specfile-path", "./vdm.yaml", "Path to vdm specfile")
 	rootCmd.PersistentFlags().BoolVar(&RootFlagValues.Debug, "debug", false, "Show debug logs")
-
-	if RootFlagValues.Debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
 
 	rootCmd.AddCommand(syncCmd)
 }

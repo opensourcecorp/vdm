@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/opensourcecorp/vdm/cmd"
-	"github.com/sirupsen/logrus"
+	"github.com/opensourcecorp/vdm/internal/message"
 )
 
 func main() {
 	if err := cmd.Execute(); err != nil {
-		logrus.Fatalf("running vdm: %v", err)
+		message.Fatalf("running vdm: %v", err)
 	}
 }
