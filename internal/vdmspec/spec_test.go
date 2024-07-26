@@ -15,13 +15,13 @@ const testVDMRoot = "../../testdata"
 var (
 	testVDMMetaFilePath = filepath.Join(testVDMRoot, MetaFileName)
 
-	testSpec = Spec{
+	testRemote = Remote{
 		Remote:    "https://some-remote",
 		Version:   "v1.0.0",
 		LocalPath: testVDMRoot,
 	}
 
-	testSpecFilePath = filepath.Join(testVDMRoot, "vdm.json")
+	testSpecFilePath = filepath.Join(testVDMRoot, "vdm.yaml")
 
 	testVDMMetaContents = fmt.Sprintf(
 		`{"remote": "https://some-remote", "version": "v1.0.0", "local_path": "%s"}`,
@@ -34,9 +34,9 @@ func TestVDMMeta(t *testing.T) {
 		err := os.WriteFile(testVDMMetaFilePath, []byte(testVDMMetaContents), 0644)
 		require.NoError(t, err)
 
-		got, err := testSpec.GetVDMMeta()
+		got, err := testRemote.GetVDMMeta()
 		assert.NoError(t, err)
-		assert.Equal(t, testSpec, got)
+		assert.Equal(t, testRemote, got)
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
@@ -46,15 +46,15 @@ func TestVDMMeta(t *testing.T) {
 
 	t.Run("WriteVDMMeta", func(t *testing.T) {
 		// Needs to have parent dir(s) exist for write to work
-		err := os.MkdirAll(testSpec.LocalPath, 0644)
+		err := os.MkdirAll(testRemote.LocalPath, 0644)
 		require.NoError(t, err)
 
-		err = testSpec.WriteVDMMeta()
+		err = testRemote.WriteVDMMeta()
 		require.NoError(t, err)
 
-		got, err := testSpec.GetVDMMeta()
+		got, err := testRemote.GetVDMMeta()
 		assert.NoError(t, err)
-		assert.Equal(t, testSpec, got)
+		assert.Equal(t, testRemote, got)
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
@@ -63,9 +63,9 @@ func TestVDMMeta(t *testing.T) {
 	})
 
 	t.Run("GetSpecsFromFile", func(t *testing.T) {
-		specs, err := GetSpecsFromFile(testSpecFilePath)
+		spec, err := GetSpecFromFile(testSpecFilePath)
 		assert.NoError(t, err)
-		assert.Equal(t, 5, len(specs))
+		assert.Equal(t, 5, len(spec.Remotes))
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)

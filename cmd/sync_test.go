@@ -13,11 +13,11 @@ import (
 const testVDMRoot = "../testdata"
 
 var (
-	testSpecFilePath = filepath.Join(testVDMRoot, "vdm.json")
+	testSpecFilePath = filepath.Join(testVDMRoot, "vdm.yaml")
 )
 
 func TestSync(t *testing.T) {
-	specs, err := vdmspec.GetSpecsFromFile(testSpecFilePath)
+	spec, err := vdmspec.GetSpecFromFile(testSpecFilePath)
 	require.NoError(t, err)
 
 	// Need to override for test
@@ -27,25 +27,25 @@ func TestSync(t *testing.T) {
 
 	t.Run("SyncGit", func(t *testing.T) {
 		t.Run("spec[0] used a tag", func(t *testing.T) {
-			vdmMeta, err := specs[0].GetVDMMeta()
+			vdmMeta, err := spec.Remotes[0].GetVDMMeta()
 			assert.NoError(t, err)
 			assert.Equal(t, "v0.2.0", vdmMeta.Version)
 		})
 
 		t.Run("spec[1] used 'latest'", func(t *testing.T) {
-			vdmMeta, err := specs[1].GetVDMMeta()
+			vdmMeta, err := spec.Remotes[1].GetVDMMeta()
 			assert.NoError(t, err)
 			assert.Equal(t, "latest", vdmMeta.Version)
 		})
 
 		t.Run("spec[2] used a branch", func(t *testing.T) {
-			vdmMeta, err := specs[2].GetVDMMeta()
+			vdmMeta, err := spec.Remotes[2].GetVDMMeta()
 			assert.NoError(t, err)
 			assert.Equal(t, "main", vdmMeta.Version)
 		})
 
 		t.Run("spec[3] used a hash", func(t *testing.T) {
-			vdmMeta, err := specs[3].GetVDMMeta()
+			vdmMeta, err := spec.Remotes[3].GetVDMMeta()
 			assert.NoError(t, err)
 			assert.Equal(t, "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f", vdmMeta.Version)
 		})
@@ -53,15 +53,15 @@ func TestSync(t *testing.T) {
 
 	t.Run("SyncFile", func(t *testing.T) {
 		t.Run("spec[4] had an implcit version", func(t *testing.T) {
-			vdmMeta, err := specs[4].GetVDMMeta()
+			vdmMeta, err := spec.Remotes[4].GetVDMMeta()
 			assert.NoError(t, err)
 			assert.Equal(t, "", vdmMeta.Version)
 		})
 	})
 
 	t.Cleanup(func() {
-		for _, spec := range specs {
-			err := os.RemoveAll(spec.LocalPath)
+		for _, remote := range spec.Remotes {
+			err := os.RemoveAll(remote.LocalPath)
 			assert.NoError(t, err)
 		}
 	})

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/opensourcecorp/vdm/internal/remote"
+	"github.com/opensourcecorp/vdm/internal/remotes"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -26,54 +26,52 @@ func syncExecute(_ *cobra.Command, _ []string) error {
 // sync does the heavy lifting to ensure that the local directory tree(s) match
 // the desired state as defined in the specfile.
 func sync() error {
-	specs, err := vdmspec.GetSpecsFromFile(RootFlagValues.SpecFilePath)
+	spec, err := vdmspec.GetSpecFromFile(RootFlagValues.SpecFilePath)
 	if err != nil {
 		return fmt.Errorf("getting specs from spec file: %w", err)
 	}
 
-	for _, spec := range specs {
-		err := spec.Validate()
-		if err != nil {
-			return fmt.Errorf("your vdm spec file is malformed: %w", err)
-		}
+	err = spec.Validate()
+	if err != nil {
+		return fmt.Errorf("your vdm spec file is malformed: %w", err)
 	}
 
 SpecLoop:
-	for _, spec := range specs {
+	for _, remote := range spec.Remotes {
 		// process stored vdm metafile so we know what operations to actually
 		// perform for existing directories
-		vdmMeta, err := spec.GetVDMMeta()
+		vdmMeta, err := remote.GetVDMMeta()
 		if err != nil {
 			return fmt.Errorf("getting vdm metadata file for sync: %w", err)
 		}
 
-		if vdmMeta == (vdmspec.Spec{}) {
-			logrus.Infof("%s not found at local path '%s' -- will be created", vdmspec.MetaFileName, filepath.Join(spec.LocalPath))
+		if vdmMeta == (vdmspec.Remote{}) {
+			logrus.Infof("%s not found at local path '%s' -- will be created", vdmspec.MetaFileName, filepath.Join(remote.LocalPath))
 		} else {
-			if vdmMeta.Version != spec.Version && vdmMeta.Remote != spec.Remote {
-				logrus.Infof("Will change '%s' from current local version spec '%s' to '%s'...", spec.Remote, vdmMeta.Version, spec.Version)
+			if vdmMeta.Version != remote.Version && vdmMeta.Remote != remote.Remote {
+				logrus.Infof("Will change '%s' from current local version spec '%s' to '%s'...", remote.Remote, vdmMeta.Version, remote.Version)
 				panic("not implemented")
 			} else {
-				logrus.Infof("Version unchanged (%s) in spec file for '%s' --> '%s', skipping", spec.Version, spec.Remote, spec.LocalPath)
+				logrus.Infof("Version unchanged (%s) in spec file for '%s' --> '%s', skipping", remote.Version, remote.Remote, remote.LocalPath)
 				continue SpecLoop
 			}
 		}
 
-		switch spec.Type {
+		switch remote.Type {
 		case "git", "":
-			remote.SyncGit(spec)
+			remotes.SyncGit(remote)
 		case "file":
-			remote.SyncFile(spec)
+			remotes.SyncFile(remote)
 		default:
-			return fmt.Errorf("unrecognized remote type '%s'", spec.Type)
+			return fmt.Errorf("unrecognized remote type '%s'", remote.Type)
 		}
 
-		err = spec.WriteVDMMeta()
+		err = remote.WriteVDMMeta()
 		if err != nil {
 			return fmt.Errorf("could not write %s file to disk: %w", vdmspec.MetaFileName, err)
 		}
 
-		logrus.Infof("%s -- Done.", spec.OpMsg())
+		logrus.Infof("%s -- Done.", remote.OpMsg())
 	}
 
 	logrus.Info("All done!")

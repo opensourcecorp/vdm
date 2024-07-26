@@ -7,11 +7,9 @@ VERSION := 0.4.0
 
 all: test package package-debian
 
-.PHONY: test
-test: clean
-	go vet ./...
-	go test -cover -coverprofile=./cover.out ./...
-	staticcheck ./...
+.PHONY: ci
+ci: clean
+	@bash ./scripts/ci.sh
 
 .PHONY: test-coverage
 test-coverage: test

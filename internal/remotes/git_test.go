@@ -1,4 +1,4 @@
-package remote
+package remotes
 
 import (
 	"os"
@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTestGitSpec() vdmspec.Spec {
+func getTestGitSpec() vdmspec.Remote {
 	specLocalPath := "./deps/go-common"
-	return vdmspec.Spec{
+	return vdmspec.Remote{
 		Type:      "git",
 		Remote:    "https://github.com/opensourcecorp/go-common",
 		Version:   "v0.2.0",
