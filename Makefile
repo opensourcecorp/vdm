@@ -5,9 +5,10 @@ BINNAME := vdm
 # DO NOT TOUCH -- use `make bump-version oldversion=X newversion=Y`!
 VERSION := 0.4.0
 
+.PHONY: %
+
 all: ci package package-debian
 
-.PHONY: ci
 ci: clean
 	@bash ./scripts/ci.sh
 
@@ -17,7 +18,6 @@ test: ci
 ci-container:
 	@docker build -f ./Containerfile -t vdm-test:latest .
 
-.PHONY: test-coverage
 test-coverage: test
 	go tool cover -html=./cover.out -o cover.html
 	xdg-open ./cover.html
@@ -35,7 +35,6 @@ package: xbuild
 package-debian: build
 	@bash ./scripts/package-debian.sh
 
-.PHONY: clean
 clean:
 	@rm -rf \
 		/tmp/$(BINNAME)-tests \

@@ -5,7 +5,7 @@ set -euo pipefail
 mkdir -p dist
 cd build || exit 1
 for built in * ; do
-  printf 'Packaging for %s into dist/ ...\n' "${built}"
+  printf 'Packaging for %s into dist/\n' "${built}"
   cd "${built}" && tar -czf ../../dist/vdm_"${built}".tar.gz ./*
   cd - > /dev/null
 done

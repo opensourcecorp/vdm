@@ -29,6 +29,12 @@ if ! go test -cover -coverprofile=./cover.out ./... ; then
   failures+=('go-test')
 fi
 
+printf '>> Packaging checker\n'
+if ! make -s package ; then
+  printf '>>> Failed packaging check\n'
+  failures+=('packaging')
+fi
+
 if [[ "${#failures[@]}" -gt 0 ]] ; then
   printf '> One or more checks failed, see output above\n'
   exit 1
