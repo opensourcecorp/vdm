@@ -1,3 +1,4 @@
+// Package main provides the entrypoint into vdm's subcommands.
 package main
 
 import (
@@ -10,5 +11,3 @@ func main() {
 		message.Fatalf("running vdm: %v", err)
 	}
 }
-
-type ABC struct{}

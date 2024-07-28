@@ -11,11 +11,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Spec defines the
+// Spec defines the overall structure of the vmd specfile.
 type Spec struct {
 	Remotes []Remote `json:"remotes" yaml:"remotes"`
 }
 
+// Remote defines the structure of each remote configuration in the vdm
+// specfile.
 type Remote struct {
 	Type      string `json:"type,omitempty" yaml:"type,omitempty"`
 	Remote    string `json:"remote" yaml:"remote"`
@@ -24,10 +26,16 @@ type Remote struct {
 }
 
 const (
+	// MetaFileName is the name of the tracking file that vdm uses to record &
+	// track remote statuses on disk.
 	MetaFileName = "VDMMETA"
-	typeFile     = "file"
+
+	// Remote types
+	typeFile = "file"
 )
 
+// MakeMetaFilePath constructs the metafile path that vdm will use to track a
+// remote's state on disk.
 func (r Remote) MakeMetaFilePath() string {
 	metaFilePath := filepath.Join(r.LocalPath, MetaFileName)
 	// TODO: this is brittle, but it's the best I can think of right now
@@ -41,6 +49,8 @@ func (r Remote) MakeMetaFilePath() string {
 	return metaFilePath
 }
 
+// WriteVDMMeta writes the metafile contents to disk, the path of which is
+// determined by [Remote.MakeMetaFilePath].
 func (r Remote) WriteVDMMeta() error {
 	metaFilePath := r.MakeMetaFilePath()
 	vdmMetaContent, err := yaml.Marshal(r)
@@ -59,6 +69,8 @@ func (r Remote) WriteVDMMeta() error {
 	return nil
 }
 
+// GetVDMMeta reads the metafile from disk, and returns it for further
+// processing.
 func (r Remote) GetVDMMeta() (Remote, error) {
 	metaFilePath := r.MakeMetaFilePath()
 	_, err := os.Stat(metaFilePath)
@@ -86,6 +98,9 @@ func (r Remote) GetVDMMeta() (Remote, error) {
 	return vdmMeta, nil
 }
 
+// GetSpecFromFile reads the specfile from disk (the path of which is determined
+// by the user-supplied flag value), and returns it for further processing of
+// remotes.
 func GetSpecFromFile(specFilePath string) (Spec, error) {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
@@ -119,7 +134,6 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 func (r Remote) OpMsg() string {
 	if r.Version != "" {
 		return fmt.Sprintf("%s@%s --> %s", r.Remote, r.Version, r.LocalPath)
-	} else {
-		return fmt.Sprintf("%s --> %s", r.Remote, r.LocalPath)
 	}
+	return fmt.Sprintf("%s --> %s", r.Remote, r.LocalPath)
 }

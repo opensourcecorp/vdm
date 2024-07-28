@@ -1,4 +1,5 @@
 /*
-Package vdmspec defines the [Spec] struct type, and its associated methods.
+Package vdmspec defines the [Spec] and [Remote] struct types, and their
+associated methods.
 */
 package vdmspec

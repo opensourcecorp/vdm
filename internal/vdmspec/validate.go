@@ -8,6 +8,8 @@ import (
 	"github.com/opensourcecorp/vdm/internal/message"
 )
 
+// Validate performs runtime validations on the vdm specfile, and informs the
+// caller of any failures encountered.
 func (spec Spec) Validate() error {
 	var allErrors []error
 

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/remotes"
@@ -46,15 +45,14 @@ SpecLoop:
 		}
 
 		if vdmMeta == (vdmspec.Remote{}) {
-			message.Infof("%s not found at local path '%s' -- will be created", vdmspec.MetaFileName, filepath.Join(remote.LocalPath))
+			message.Infof("%s: %s not found at local path, will be created", remote.OpMsg(), vdmspec.MetaFileName)
 		} else {
 			if vdmMeta.Version != remote.Version && vdmMeta.Remote != remote.Remote {
-				message.Infof("Will change '%s' from current local version spec '%s' to '%s'...", remote.Remote, vdmMeta.Version, remote.Version)
+				message.Infof("%s: Will change '%s' from current local version spec '%s' to '%s'...", remote.OpMsg(), remote.Remote, vdmMeta.Version, remote.Version)
 				panic("not implemented")
-			} else {
-				message.Infof("Version unchanged (%s) in spec file for '%s' --> '%s', skipping", remote.Version, remote.Remote, remote.LocalPath)
-				continue SpecLoop
 			}
+			message.Infof("%s: version unchanged in spec file, skipping", remote.OpMsg())
+			continue SpecLoop
 		}
 
 		switch remote.Type {
