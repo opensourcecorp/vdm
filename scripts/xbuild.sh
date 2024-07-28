@@ -21,5 +21,5 @@ for target in ${targets} ; do
   outdir=build/"${GOOS}-${GOARCH}"
   mkdir -p "${outdir}"
   printf "Building for %s-%s into build/\n" "${GOOS}" "${GOARCH}"
-  go build -buildmode=pie -o "${outdir}/vdm${suffix}" -ldflags "-s -w"
+  go build -o "${outdir}/vdm${suffix}"
 done

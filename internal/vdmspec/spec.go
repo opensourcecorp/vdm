@@ -108,7 +108,7 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 		return Spec{}, fmt.Errorf(
 			strings.Join([]string{
 				"there was a problem reading your vdm file from '%s' -- does it not exist?",
-				"Either pass the -spec-file flag, or create one in the default location (details in the README).",
+				"Either pass the --spec-file flag, or create one in the default location (details in the README).",
 				"Error details: %w"},
 				" ",
 			),

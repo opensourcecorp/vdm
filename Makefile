@@ -2,9 +2,6 @@ SHELL = /usr/bin/env bash -euo pipefail
 
 BINNAME := vdm
 
-# DO NOT TOUCH -- use `make bump-version oldversion=X newversion=Y`!
-VERSION := 0.4.0
-
 .PHONY: %
 
 all: ci package package-debian
@@ -50,12 +47,8 @@ clean:
 	@find . -type d -name '*deps*' -exec rm -rf {} +
 	@find . -type f -name '*VDMMETA*' -delete
 
-bump-version: clean
-	@if [[ -z "$(oldversion)" ]] || [[ -z "$(newversion)" ]] ; then printf 'ERROR: "oldversion" and "newversion" must be provided\n' && exit 1 ; fi
-	find . \
-		-type f \
-		-not -path './go.*' \
-		-exec sed -i 's/$(oldversion)/$(newversion)/g' {} \;
+bump-versions: clean
+	@bash ./scripts/bump-versions.sh "$${old_version:-}"
 
 pre-commit-hook:
 	cp ./scripts/ci.sh ./.git/hooks/pre-commit
