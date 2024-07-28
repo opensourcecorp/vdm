@@ -6,10 +6,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
-runs-on: ubuntu-latest
-
 jobs:
   ci:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
