@@ -48,14 +48,14 @@ func checkFileExists(remote vdmspec.Remote) (bool, error) {
 	return true, nil
 }
 
-func retrieveFile(remote vdmspec.Remote) error {
+func retrieveFile(remote vdmspec.Remote) (err error) {
 	resp, err := http.Get(remote.Remote)
 	if err != nil {
 		return fmt.Errorf("retrieving remote file '%s': %w", remote.Remote, err)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			message.Errorf("closing response body after remote file '%s' retrieval: %v", remote.Remote, err)
+			err = errors.Join(fmt.Errorf("closing response body after remote file '%s' retrieval: %w", remote.Remote, err))
 		}
 	}()
 
@@ -72,7 +72,7 @@ func retrieveFile(remote vdmspec.Remote) error {
 	}
 	defer func() {
 		if closeErr := outFile.Close(); closeErr != nil {
-			message.Errorf("closing local file '%s' after remote file '%s' retrieval: %v", remote.LocalPath, remote.Remote, err)
+			err = errors.Join(fmt.Errorf("closing local file '%s' after remote file '%s' retrieval: %w", remote.LocalPath, remote.Remote, err))
 		}
 	}()
 

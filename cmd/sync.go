@@ -16,6 +16,7 @@ var syncCmd = &cobra.Command{
 }
 
 func syncExecute(_ *cobra.Command, _ []string) error {
+	MaybeSetDebug()
 	if err := sync(); err != nil {
 		return fmt.Errorf("executing sync command: %w", err)
 	}
@@ -73,7 +74,7 @@ SpecLoop:
 			return fmt.Errorf("could not write %s file to disk: %w", vdmspec.MetaFileName, err)
 		}
 
-		message.Infof("%s -- Done.", remote.OpMsg())
+		message.Infof("%s: Done.", remote.OpMsg())
 	}
 
 	message.Infof("All done!")

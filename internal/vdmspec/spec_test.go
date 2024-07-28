@@ -35,12 +35,12 @@ func TestVDMMeta(t *testing.T) {
 		require.NoError(t, err)
 
 		got, err := testRemote.GetVDMMeta()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, testRemote, got)
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	})
 
@@ -53,23 +53,23 @@ func TestVDMMeta(t *testing.T) {
 		require.NoError(t, err)
 
 		got, err := testRemote.GetVDMMeta()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, testRemote, got)
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	})
 
 	t.Run("GetSpecsFromFile", func(t *testing.T) {
 		spec, err := GetSpecFromFile(testSpecFilePath)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5, len(spec.Remotes))
 
 		t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	})
 }

@@ -82,7 +82,7 @@ func (r Remote) GetVDMMeta() (Remote, error) {
 
 	vdmMetaFile, err := os.ReadFile(metaFilePath)
 	if err != nil {
-		message.Debugf("error reading VMDMMETA from disk: %v", err)
+		message.Debugf("error reading VMDMMETA from disk: %w", err)
 		return Remote{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
 	}
 	message.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
@@ -90,8 +90,8 @@ func (r Remote) GetVDMMeta() (Remote, error) {
 	var vdmMeta Remote
 	err = yaml.Unmarshal(vdmMetaFile, &vdmMeta)
 	if err != nil {
-		message.Debugf("error during %s unmarshal: %v", MetaFileName, err)
-		return Remote{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %v", MetaFileName, metaFilePath, err)
+		message.Debugf("error during %s unmarshal: w", MetaFileName, err)
+		return Remote{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %w", MetaFileName, metaFilePath, err)
 	}
 	message.Debugf("file %s unmarshalled: %+v", MetaFileName, vdmMeta)
 
@@ -104,7 +104,7 @@ func (r Remote) GetVDMMeta() (Remote, error) {
 func GetSpecFromFile(specFilePath string) (Spec, error) {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
-		message.Debugf("error reading specfile from disk: %v", err)
+		message.Debugf("error reading specfile from disk: %w", err)
 		return Spec{}, fmt.Errorf(
 			strings.Join([]string{
 				"there was a problem reading your vdm file from '%s' -- does it not exist?",
@@ -121,7 +121,7 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 	var spec Spec
 	err = yaml.Unmarshal(specFile, &spec)
 	if err != nil {
-		message.Debugf("error during specfile unmarshal: %v", err)
+		message.Debugf("error during specfile unmarshal: w", err)
 		return Spec{}, fmt.Errorf("there was a problem reading the contents of your vdm spec file: %w", err)
 	}
 	message.Debugf("vdmSpecs unmarshalled: %+v", spec)

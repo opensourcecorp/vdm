@@ -15,7 +15,7 @@ func (spec Spec) Validate() error {
 
 	for remoteIndex, remote := range spec.Remotes {
 		// Remote field
-		message.Debugf("Index %d: validating field 'Remote' for %+v", remoteIndex, remote)
+		message.Debugf("Index #%d: validating field 'Remote' for %+v", remoteIndex, remote)
 		if len(remote.Remote) == 0 {
 			allErrors = append(allErrors, errors.New("all 'remote' fields must be non-zero length"))
 		}
@@ -28,7 +28,7 @@ func (spec Spec) Validate() error {
 		}
 
 		// Version field
-		message.Debugf("Index %d: validating field 'Version' for %+v", remoteIndex, remote)
+		message.Debugf("Index #%d: validating field 'Version' for %+v", remoteIndex, remote)
 		if remote.Type == "git" && len(remote.Version) == 0 {
 			allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length. If you don't care about the version (even though you probably should), then use 'latest'"))
 		}

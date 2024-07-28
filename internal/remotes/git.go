@@ -19,7 +19,7 @@ func SyncGit(remote vdmspec.Remote) error {
 	}
 
 	if remote.Version != "latest" {
-		message.Infof("%s -- Setting specified version...", remote.OpMsg())
+		message.Infof("%s: Setting specified version...", remote.OpMsg())
 		checkoutCmd := exec.Command("git", "-C", remote.LocalPath, "checkout", remote.Version)
 		checkoutOutput, err := checkoutCmd.CombinedOutput()
 		if err != nil {
@@ -59,14 +59,14 @@ func gitClone(remote vdmspec.Remote) error {
 	// full history to be able to find a specified revision
 	var cloneCmdArgs []string
 	if remote.Version == "latest" {
-		message.Debugf("%s -- version specified as 'latest', so making shallow clone and skipping separate checkout operation", remote.OpMsg())
+		message.Debugf("%s: version specified as 'latest', so making shallow clone and skipping separate checkout operation", remote.OpMsg())
 		cloneCmdArgs = []string{"clone", "--depth=1", remote.Remote, remote.LocalPath}
 	} else {
-		message.Debugf("%s -- version specified as NOT latest, so making regular clone and will make separate checkout operation", remote.OpMsg())
+		message.Debugf("%s: version specified as NOT latest, so making regular clone and will make separate checkout operation", remote.OpMsg())
 		cloneCmdArgs = []string{"clone", remote.Remote, remote.LocalPath}
 	}
 
-	message.Infof("%s -- Retrieving...", remote.OpMsg())
+	message.Infof("%s: Retrieving...", remote.OpMsg())
 	cloneCmd := exec.Command("git", cloneCmdArgs...)
 	cloneOutput, err := cloneCmd.CombinedOutput()
 	if err != nil {

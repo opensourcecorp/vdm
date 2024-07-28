@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidate(t *testing.T) {
@@ -16,7 +17,7 @@ func TestValidate(t *testing.T) {
 			}},
 		}
 		err := spec.Validate()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("fails on zero-length remote", func(t *testing.T) {
