@@ -10,10 +10,11 @@ runs-on: ubuntu-latest
 
 jobs:
   ci:
-    - uses: actions/checkout@v4
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.19'
-    - name: Run CI checks
-      run: 'make ci'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.19'
+      - name: Run CI checks
+        run: 'make ci'
