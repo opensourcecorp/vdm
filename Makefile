@@ -38,8 +38,8 @@ clean:
 		*cache* \
 		.*cache* \
 		./build/ \
-		./dist/*.tar.gz \
-		./dist/*.zip \
+		./dist/zipped/*.tar.gz \
+		./dist/zipped/*.zip \
 		./dist/debian/vdm.deb \
 		*.out
 	@sudo rm -rf ./dist/debian/vdm/usr
