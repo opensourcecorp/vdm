@@ -38,7 +38,8 @@ clean:
 		*cache* \
 		.*cache* \
 		./build/ \
-		./dist/*.gz \
+		./dist/*.tar.gz \
+		./dist/*.zip \
 		./dist/debian/vdm.deb \
 		*.out
 	@sudo rm -rf ./dist/debian/vdm/usr
@@ -49,6 +50,9 @@ clean:
 
 bump-versions: clean
 	@bash ./scripts/bump-versions.sh "$${old_version:-}"
+
+tag-release: clean
+	@bash ./scripts/tag-release.sh
 
 pre-commit-hook:
 	cp ./scripts/ci.sh ./.git/hooks/pre-commit

@@ -1,5 +1,6 @@
 # Packaged binaries for e.g. GitHub
-*.gz
+*.tar.gz
+*.zip
 
 # The possible locations of the app binary itself, and its debfile
 vdm
