@@ -50,7 +50,7 @@ func TestValidate(t *testing.T) {
 				Remote:    "https://some-remote",
 				Version:   "",
 				LocalPath: "./deps/some-remote",
-				Type:      "git",
+				Type:      GitType,
 			}},
 		}
 		err := spec.Validate()

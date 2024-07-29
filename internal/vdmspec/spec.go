@@ -28,10 +28,12 @@ type Remote struct {
 const (
 	// MetaFileName is the name of the tracking file that vdm uses to record &
 	// track remote statuses on disk.
-	MetaFileName = "VDMMETA"
+	MetaFileName string = "VDMMETA"
 
-	// Remote types
-	typeFile = "file"
+	// GitType represents the string to match against for git remote types.
+	GitType string = "git"
+	// FileType represents the string to match against for file remote types.
+	FileType string = "file"
 )
 
 // MakeMetaFilePath constructs the metafile path that vdm will use to track a
@@ -39,7 +41,7 @@ const (
 func (r Remote) MakeMetaFilePath() string {
 	metaFilePath := filepath.Join(r.LocalPath, MetaFileName)
 	// TODO: this is brittle, but it's the best I can think of right now
-	if r.Type == typeFile {
+	if r.Type == FileType {
 		fileDir := filepath.Dir(r.LocalPath)
 		fileName := filepath.Base(r.LocalPath)
 		// converts to e.g. 'VDMMETA_http.proto'

@@ -57,11 +57,11 @@ SpecLoop:
 		}
 
 		switch remote.Type {
-		case "git", "":
+		case vdmspec.GitType, "":
 			if err := remotes.SyncGit(remote); err != nil {
 				return fmt.Errorf("syncing git remote: %w", err)
 			}
-		case "file":
+		case vdmspec.FileType:
 			if err := remotes.SyncFile(remote); err != nil {
 				return fmt.Errorf("syncing file remote: %w", err)
 			}
