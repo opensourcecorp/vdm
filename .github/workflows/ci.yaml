@@ -28,7 +28,7 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     needs: tag
-    run-on: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
@@ -38,6 +38,6 @@ jobs:
       - name: Package binaries
         run: 'make package'
       - name: Create GitHub Release
-        run: gh release create "v$(grep -v '#' ./VERSION)" --generate-notes --latest ./dist/zipped/*
+        run: gh release create "v$(grep -v '#' ./VERSION)" --generate-notes --verify-tag --latest ./dist/zipped/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
