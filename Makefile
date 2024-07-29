@@ -2,48 +2,35 @@ SHELL = /usr/bin/env bash -euo pipefail
 
 BINNAME := vdm
 
-all: test clean
-
 .PHONY: %
 
-test: clean
-	go vet ./...
-	go test -cover -coverprofile=./cover.out ./...
-	staticcheck ./...
-	make -s clean
+all: ci package package-debian
+
+ci: clean
+	@bash ./scripts/ci.sh
+
+# test is just an alias for ci
+test: ci
+
+ci-container:
+	@docker build -f ./Containerfile -t vdm-test:latest .
 
 test-coverage: test
 	go tool cover -html=./cover.out -o cover.html
 	xdg-open ./cover.html
 
+# builds for the current platform only
 build: clean
-	@mkdir -p build/$$(go env GOOS)-$$(go env GOARCH)
-	@go build -o build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME)
+	@go build -buildmode=pie -o build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME) -ldflags "-s -w"
 
 xbuild: clean
-	@for target in \
-		darwin-amd64 \
-		linux-amd64 \
-		linux-arm \
-		linux-arm64 \
-		windows-amd64 \
-	; \
-	do \
-		GOOS=$$(echo "$${target}" | cut -d'-' -f1) ; \
-		GOARCH=$$(echo "$${target}" | cut -d'-' -f2) ; \
-		outdir=build/"$${GOOS}-$${GOARCH}" ; \
-		mkdir -p "$${outdir}" ; \
-		printf "Building for %s-%s into build/ ...\n" "$${GOOS}" "$${GOARCH}" ; \
-		GOOS="$${GOOS}" GOARCH="$${GOARCH}" go build -o "$${outdir}"/$(BINNAME) ; \
-	done
+	@bash ./scripts/xbuild.sh
 
 package: xbuild
-	@mkdir -p dist
-	@cd build || exit 1; \
-	for built in * ; do \
-		printf 'Packaging for %s into dist/ ...\n' "$${built}" ; \
-		cd $${built} && tar -czf ../../dist/$(BINNAME)_$${built}.tar.gz * && cd - >/dev/null ; \
-	done
+	@bash ./scripts/package.sh
+
+package-debian: build
+	@bash ./scripts/package-debian.sh
 
 clean:
 	@rm -rf \
@@ -51,9 +38,24 @@ clean:
 		*cache* \
 		.*cache* \
 		./build/ \
-		./dist/ \
-		./deps/ \
-		./testdata/deps/
+		./dist/zipped/*.tar.gz \
+		./dist/zipped/*.zip \
+		./dist/debian/vdm.deb \
+		*.out
+	@sudo rm -rf ./dist/debian/vdm/usr
+# TODO: until I sort out the tests to write test data consistently, these deps/
+# directories etc. can kind of show up anywhere
+	@find . -type d -name '*deps*' -exec rm -rf {} +
+	@find . -type f -name '*VDMMETA*' -delete
+
+bump-versions: clean
+	@bash ./scripts/bump-versions.sh "$${old_version:-}"
+
+tag-release: clean
+	@bash ./scripts/tag-release.sh
+
+pre-commit-hook:
+	cp ./scripts/ci.sh ./.git/hooks/pre-commit
 
 # Some targets that help set up local workstations with rhad tooling. Assumes
 # ~/.local/bin is on $PATH

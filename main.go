@@ -1,42 +1,13 @@
+// Package main provides the entrypoint into vdm's subcommands.
 package main
 
 import (
-	"os"
+	"github.com/opensourcecorp/vdm/cmd"
+	"github.com/opensourcecorp/vdm/internal/message"
 )
 
 func main() {
-	checkRootUsage(os.Args)
-	cmd, ok := subcommands[os.Args[1]] // length-guarded already by checkRootUsage() above
-	if !ok {
-		showRootUsage()
-		errLogger.Fatalf("Unrecognized vdm subcommand '%s'", os.Args[1])
+	if err := cmd.Execute(); err != nil {
+		message.Fatalf("running vdm: %v", err)
 	}
-	registerFlags()
-	cmd.Parse(os.Args[2:])
-
-	ctx := registerContextKeys()
-
-	err := checkGitAvailable(ctx)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	specs := getSpecsFromFile(ctx, specFilePath)
-
-	for _, spec := range specs {
-		err := spec.Validate(ctx)
-		if err != nil {
-			errLogger.Fatalf("Your vdm spec file is malformed: %v", err)
-		}
-	}
-
-	switch cmd.Name() {
-	case syncCmd.Name():
-		sync(ctx, specs)
-	default: // should never get here since we check above, but still
-		showRootUsage()
-		errLogger.Fatalf("Unrecognized vdm subcommand '%s'", cmd.Name())
-	}
-
-	happyLogger.Print("All done!")
 }

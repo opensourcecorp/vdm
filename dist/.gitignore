@@ -1,0 +1,10 @@
+# Packaged binaries for e.g. GitHub
+*.tar.gz
+*.zip
+
+# The possible locations of the app binary itself, and its debfile
+vdm
+*.deb
+debian/vdm/usr/bin/vdm
+# ... but NOT its Debian packaging root directory, which must have the same name
+!debian/vdm/

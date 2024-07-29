@@ -1,0 +1,43 @@
+name: main
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+      - name: Run CI checks
+        run: 'make ci'
+  tag:
+    if: github.ref == 'refs/heads/main'
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag for release
+        run: 'make tag-release'
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+      - name: Package binaries
+        run: 'make package'
+      - name: Create GitHub Release
+        run: gh release create "v$(grep -v '#' ./VERSION)" --generate-notes --verify-tag --latest ./dist/zipped/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
