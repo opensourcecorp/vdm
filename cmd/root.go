@@ -10,7 +10,7 @@ import (
 )
 
 // !!! DO NOT TOUCH, the version-bumper script handles updating this !!!
-const vdmVersion string = "v0.2.0"
+const vdmVersion string = "v0.2.1"
 
 var rootCmd = cobra.Command{
 	Use:              "vdm",

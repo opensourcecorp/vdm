@@ -13,6 +13,19 @@ current_git_branch="$(git rev-parse --abbrev-ref HEAD)"
 latest_git_tag="$(git tag --list | tail -n1)"
 current_listed_version="$(grep -v '#' "${root:-}"/VERSION)"
 
+if [[ -z "${current_git_branch:-}" ]] ; then
+  printf 'ERROR: unable to determine current git branch\n' > /dev/stderr
+  exit 1
+fi
+if [[ -z "${latest_git_tag:-}" ]] ; then
+  printf 'ERROR: unable to determine latest git tag\n' > /dev/stderr
+  exit 1
+fi
+if [[ -z "${current_listed_version:-}" ]] ; then
+  printf 'ERROR: unable to determine version specified in VERSION file\n' > /dev/stderr
+  exit 1
+fi
+
 printf 'Current git branch: %s\n' "${current_git_branch:-}"
 printf 'Latest git tag: %s\n' "${latest_git_tag:-}"
 printf 'Current version listed in VERSION file: %s\n' "${current_listed_version:-}"

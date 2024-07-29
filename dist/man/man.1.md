@@ -1,4 +1,4 @@
-% VDM(1) vdm 0.2.0
+% VDM(1) vdm 0.2.1
 % Ryan J. Price
 % 2023
 
