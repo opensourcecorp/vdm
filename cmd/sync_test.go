@@ -21,7 +21,7 @@ func TestSync(t *testing.T) {
 
 	// Need to override for test
 	RootFlagValues.SpecFilePath = testSpecFilePath
-	err = sync()
+	err = sync(false)
 	require.NoError(t, err)
 
 	// defer t.Cleanup(func() {

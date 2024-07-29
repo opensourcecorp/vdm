@@ -2,6 +2,7 @@ package remotes
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
@@ -20,19 +21,33 @@ func getTestGitSpec() vdmspec.Remote {
 }
 
 func TestSyncGit(t *testing.T) {
-	spec := getTestGitSpec()
-	err := SyncGit(spec)
-	require.NoError(t, err)
+	t.Run("with keepGitDir=false", func(t *testing.T) {
+		spec := getTestGitSpec()
+		err := SyncGit(spec, false)
+		require.NoError(t, err)
+		defer t.Cleanup(func() {
+			if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
+				t.Fatalf("removing specLocalPath: %v", cleanupErr)
+			}
+		})
 
-	defer t.Cleanup(func() {
-		if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
-			t.Fatalf("removing specLocalPath: %v", cleanupErr)
-		}
+		_, err = os.Stat(filepath.Join(spec.LocalPath, ".git"))
+		assert.ErrorIs(t, err, os.ErrNotExist, ".git directory should be removed")
 	})
 
-	t.Run(".git directory was removed", func(t *testing.T) {
-		_, err := os.Stat("./deps/go-common-tag/.git")
-		assert.ErrorIs(t, err, os.ErrNotExist)
+	t.Run("with keepGitDir=true", func(t *testing.T) {
+		spec := getTestGitSpec()
+		err := SyncGit(spec, true)
+		require.NoError(t, err)
+		defer t.Cleanup(func() {
+			if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
+				t.Fatalf("removing specLocalPath: %v", cleanupErr)
+			}
+		})
+
+		_, err = os.Stat(filepath.Join(spec.LocalPath, ".git"))
+		assert.NoError(t, err, ".git directory should exist")
+		assert.DirExists(t, filepath.Join(spec.LocalPath, ".git"), ".git should be a directory")
 	})
 }
 
