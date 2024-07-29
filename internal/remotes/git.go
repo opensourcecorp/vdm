@@ -12,7 +12,7 @@ import (
 )
 
 // SyncGit is the root of the sync operations for "git" remote types.
-func SyncGit(remote vdmspec.Remote) error {
+func SyncGit(remote vdmspec.Remote, keepGitDir bool) error {
 	err := gitClone(remote)
 	if err != nil {
 		return fmt.Errorf("cloing remote: %w", err)
@@ -27,11 +27,13 @@ func SyncGit(remote vdmspec.Remote) error {
 		}
 	}
 
-	message.Debugf("removing .git dir for local path '%s'", remote.LocalPath)
-	dotGitPath := filepath.Join(remote.LocalPath, ".git")
-	err = os.RemoveAll(dotGitPath)
-	if err != nil {
-		return fmt.Errorf("removing directory %s: %w", dotGitPath, err)
+	if !keepGitDir {
+		message.Debugf("removing .git dir for local path '%s'", remote.LocalPath)
+		dotGitPath := filepath.Join(remote.LocalPath, ".git")
+		err = os.RemoveAll(dotGitPath)
+		if err != nil {
+			return fmt.Errorf("removing directory %s: %w", dotGitPath, err)
+		}
 	}
 
 	return nil

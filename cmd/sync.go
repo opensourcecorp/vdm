@@ -15,9 +15,18 @@ var syncCmd = &cobra.Command{
 	RunE:  syncExecute,
 }
 
-func syncExecute(_ *cobra.Command, _ []string) error {
+func init() {
+	syncCmd.Flags().Bool("keep-git-dir", false, "Keep the .git directory after cloning")
+}
+
+func syncExecute(ccmd *cobra.Command, _ []string) error {
 	MaybeSetDebug()
-	if err := sync(); err != nil {
+	keepGitDir, err := ccmd.Flags().GetBool("keep-git-dir")
+	if err != nil {
+		return fmt.Errorf("getting keep-git-dir flag: %w", err)
+	}
+
+	if err := sync(keepGitDir); err != nil {
 		return fmt.Errorf("executing sync command: %w", err)
 	}
 	return nil
@@ -25,7 +34,7 @@ func syncExecute(_ *cobra.Command, _ []string) error {
 
 // sync does the heavy lifting to ensure that the local directory tree(s) match
 // the desired state as defined in the specfile.
-func sync() error {
+func sync(keepGitDir bool) error {
 	spec, err := vdmspec.GetSpecFromFile(RootFlagValues.SpecFilePath)
 	if err != nil {
 		return fmt.Errorf("getting specs from spec file: %w", err)
@@ -58,7 +67,7 @@ SpecLoop:
 
 		switch remote.Type {
 		case vdmspec.GitType, "":
-			if err := remotes.SyncGit(remote); err != nil {
+			if err := remotes.SyncGit(remote, keepGitDir); err != nil {
 				return fmt.Errorf("syncing git remote: %w", err)
 			}
 		case vdmspec.FileType:
