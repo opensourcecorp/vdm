@@ -3,8 +3,9 @@ set -euo pipefail
 
 ################################################################################
 # A singular, consistent version needs to match across several places across the
-# codebase tree, such as the Debian Control file & man pages.This script is used
-# to bump version identifiers in any locations listed in the loop at the bottom.
+# codebase tree, such as the Debian Control file & man pages, the embedded
+# version listed for the CLI command, etc. This script is used to bump version
+# identifiers in any locations listed in the loop at the bottom.
 ################################################################################
 
 root="$(git rev-parse --show-toplevel)"
@@ -25,6 +26,7 @@ fi
 for f in \
   dist/debian/vdm/DEBIAN/control \
   dist/man/* \
+  cmd/root.go \
 ; do
   if grep -q "${old_version}" "${root}/${f}" ; then
     printf 'Updating version in %s: %s -> %s\n' "${f}" "${old_version}" "${new_version}"

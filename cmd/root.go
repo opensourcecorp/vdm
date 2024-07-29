@@ -2,19 +2,28 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+// !!! DO NOT TOUCH, the version-bumper script handles updating this !!!
+const vdmVersion string = "v0.2.0"
+
 var rootCmd = cobra.Command{
 	Use:              "vdm",
 	Short:            "vdm -- a Versioned-Dependency Manager",
 	Long:             "vdm is used to manage arbitrary remote dependencies",
 	TraverseChildren: true,
-	Run: func(_ *cobra.Command, _ []string) {
+	Version:          vdmVersion,
+	Run: func(cmd *cobra.Command, args []string) {
 		MaybeSetDebug()
+		if len(args) == 0 {
+			cmd.Help()
+			os.Exit(0)
+		}
 	},
 }
 

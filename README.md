@@ -1,9 +1,48 @@
 # vdm: A General-Purpose Versioned-Dependency Manager
 
-`vdm` is an alternative to e.g. git submodules for managing arbitrary external
+`vdm` is an alternative to e.g. Git Submodules for managing arbitrary external
 dependencies for the same reasons, in a more sane way. Unlike some other tools
 that try to solve this problem, `vdm` is language-agnostic, and can be used for
 any purpose that you would need remote development resources.
+
+`vdm` (and Git Submodules) can be used for many different purposes, but most
+commonly as a way to track external dependencies that your own code might need,
+but that you don't have a language-native way to specify. Some examples might
+be:
+
+- You have a shared CI repo from which you need to access common scripts, build
+  tasks, etc.
+
+- You're building & testing a backend application and need to test serving
+  frontend code from it, and your team has that frontend code in another
+  repository.
+
+- Your team uses protocol buffers and you need to be able to import other loose
+  `.proto` files to generate your own code.
+
+`vdm` lets you clearly specify all those remote dependencies & more, and
+retrieve them whenever you need them.
+
+## Getting Started
+
+### Installation
+
+`vdm` can be installed from [its GitHub Releases
+page](https://github.com/opensourcecorp/vdm/releases). There is a zipped binary
+for major platforms & architectures, and those are indicated in the Asset file
+name. For example, if you have an M2 macOS laptop, you would download the
+`vdm_darwin-arm64.tar.gz` file, and extract it to somewhere on your `$PATH`.
+
+If you have a recent version of the Go toolchain available, you can also install
+or run `vdm` using `go`:
+
+```sh
+go install github.com/opensourcecorp/vdm@<vX.Y.Z|latest>
+# or
+go run github.com/opensourcecorp/vdm@<vX.Y.Z|latest> ...
+```
+
+### Usage
 
 To get started, you'll need a `vdm` spec file, which is just a YAML (or JSON)
 file specifying all your external dependencies along with (usually) their
@@ -34,11 +73,11 @@ Once you have a spec file, just run:
 vdm sync
 ```
 
-and `vdm` will process the spec file, retrieve your dependencies, put them where
-they belong, and check out the right versions. By default, `vdm sync` also
-removes the local `.git` directories for each `git` remote, so as to not upset
-your local Git tree. If you want to change the version/revision of a remote,
-just update your spec file and run `vdm sync` again.
+and `vdm` will process the spec file, retrieve your dependencies as specified,
+and put them where you told them to go. By default, `vdm sync` also removes the
+local `.git` directories for each `git` remote, so as to not upset your local
+Git tree. If you want to change the version/revision of a remote, just update
+your spec file and run `vdm sync` again.
 
 After running `vdm sync` with the above example spec file, your directory tree
 would look something like this:
@@ -50,6 +89,14 @@ would look something like this:
         <stuff in that repo>
     http.proto
 ```
+
+## Dependencies
+
+`vdm` is distributed as a statically-linked binary per platform that has no
+language-specific dependencies. However, note that at the time of this writing,
+`vdm` *does* depends on `git` being installed if you specify any `git` remote
+types. `vdm` will fail with an informative error if it can't find `git` on your
+`$PATH`.
 
 ## A note about auth
 
