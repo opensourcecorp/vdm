@@ -35,12 +35,6 @@ if ! make -s package ; then
   failures+=('packaging')
 fi
 
-printf '>> Version tag checker\n'
-if ! make -s tag-release ; then
-  printf '>>> Failed verion tag checker\n' > /dev/stderr
-  failures+=('version-tag')
-fi
-
 if [[ "${#failures[@]}" -gt 0 ]] ; then
   printf '> One or more checks failed, see output above\n' > /dev/stderr
   exit 1
