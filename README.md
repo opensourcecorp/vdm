@@ -5,13 +5,12 @@ dependencies for the same reasons, in a more sane way. Unlike some other tools
 that try to solve this problem, `vdm` is language-agnostic, and can be used for
 any purpose that you would need remote development resources.
 
-`vdm` (and Git Submodules) can be used for many different purposes, but most
-commonly as a way to track external dependencies that your own code might need,
-but that you don't have a language-native way to specify. Some examples might
-be:
+`vdm` can be used for many different purposes, but most commonly as a way to
+track external dependencies that your own code might need, but that you don't
+have a language-native way to specify. Some examples might be:
 
-- You have a shared CI repo from which you need to access common scripts, build
-  tasks, etc.
+- You have a shared CI repo from which you need to access common shell scripts,
+  hosted build tasks, etc.
 
 - You're building & testing a backend application and need to test serving
   frontend code from it, and your team has that frontend code in another
@@ -52,7 +51,7 @@ revisions & where you want them to live on your filesystem:
 remotes:
 
   - type:       "git" # the default, and so can be omitted if desired
-    remote:     "https://github.com/opensourcecorp/go-common"
+    remote:     "https://github.com/opensourcecorp/go-common" # can specify as 'git@...' to use SSH instead
     local_path: "./deps/go-common"
     version:    "v0.2.0" # tag example; can also be a branch, commit hash, or the word 'latest'
 
@@ -114,4 +113,4 @@ running `vdm` commands.
 - Add `--keep-git-dir` flag so that `git` remote types don't wipe the `.git`
   directory at clone-time.
 
-- Support more than just Git
+- Support more than just `git` and `file` types, and make `file` better

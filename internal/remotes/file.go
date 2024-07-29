@@ -63,6 +63,11 @@ func retrieveFile(remote vdmspec.Remote) (err error) {
 		return fmt.Errorf("unsuccessful status code '%d' from server when retrieving remote file '%s'", resp.StatusCode, remote.Remote)
 	}
 
+	err = ensureParentDirs(remote.LocalPath)
+	if err != nil {
+		return fmt.Errorf("creating parent directories for file: %w", err)
+	}
+
 	// Note: I would normally use os.WriteFile() using the returned bytes
 	// directly, but the internet says this os.Create()/io.Copy() approach
 	// appears to be idiomatic
@@ -81,6 +86,22 @@ func retrieveFile(remote vdmspec.Remote) (err error) {
 		return fmt.Errorf("copying HTTP response to disk: ")
 	}
 	message.Debugf("wrote %d bytes to '%s'", bytesWritten, remote.LocalPath)
+
+	return nil
+}
+
+func ensureParentDirs(path string) error {
+	fullPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("determining abspath for file '%s': %w", path, err)
+	}
+	message.Debugf("absolute filepath for '%s' determined to be '%s'", path, fullPath)
+	dir := filepath.Dir(fullPath)
+	err = os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("making directories: %w", err)
+	}
+	message.Debugf("created director(ies): %s", dir)
 
 	return nil
 }

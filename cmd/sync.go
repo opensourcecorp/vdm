@@ -15,7 +15,7 @@ var syncCmd = &cobra.Command{
 	RunE:  syncExecute,
 }
 
-func syncExecute(cmd *cobra.Command, args []string) error {
+func syncExecute(_ *cobra.Command, _ []string) error {
 	MaybeSetDebug()
 	if err := sync(); err != nil {
 		return fmt.Errorf("executing sync command: %w", err)

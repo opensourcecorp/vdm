@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -24,6 +23,13 @@ func TestSync(t *testing.T) {
 	RootFlagValues.SpecFilePath = testSpecFilePath
 	err = sync()
 	require.NoError(t, err)
+
+	// defer t.Cleanup(func() {
+	// 	for _, remote := range spec.Remotes {
+	// 		err := os.RemoveAll(remote.LocalPath)
+	// 		require.NoError(t, err)
+	// 	}
+	// })
 
 	t.Run("SyncGit", func(t *testing.T) {
 		t.Run("spec[0] used a tag", func(t *testing.T) {
@@ -52,17 +58,10 @@ func TestSync(t *testing.T) {
 	})
 
 	t.Run("SyncFile", func(t *testing.T) {
-		t.Run("spec[4] had an implcit version", func(t *testing.T) {
+		t.Run("spec[4] had an implicit version", func(t *testing.T) {
 			vdmMeta, err := spec.Remotes[4].GetVDMMeta()
 			require.NoError(t, err)
 			assert.Equal(t, "", vdmMeta.Version)
 		})
-	})
-
-	t.Cleanup(func() {
-		for _, remote := range spec.Remotes {
-			err := os.RemoveAll(remote.LocalPath)
-			require.NoError(t, err)
-		}
 	})
 }

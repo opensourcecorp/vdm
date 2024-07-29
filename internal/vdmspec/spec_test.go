@@ -34,17 +34,22 @@ func TestVDMMeta(t *testing.T) {
 		err := os.WriteFile(testVDMMetaFilePath, []byte(testVDMMetaContents), 0644)
 		require.NoError(t, err)
 
-		got, err := testRemote.GetVDMMeta()
-		require.NoError(t, err)
-		assert.Equal(t, testRemote, got)
-
-		t.Cleanup(func() {
+		defer t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
 			require.NoError(t, err)
 		})
+
+		got, err := testRemote.GetVDMMeta()
+		require.NoError(t, err)
+		assert.Equal(t, testRemote, got)
 	})
 
 	t.Run("WriteVDMMeta", func(t *testing.T) {
+		defer t.Cleanup(func() {
+			err := os.RemoveAll(testVDMMetaFilePath)
+			require.NoError(t, err)
+		})
+
 		// Needs to have parent dir(s) exist for write to work
 		err := os.MkdirAll(testRemote.LocalPath, 0644)
 		require.NoError(t, err)
@@ -55,21 +60,16 @@ func TestVDMMeta(t *testing.T) {
 		got, err := testRemote.GetVDMMeta()
 		require.NoError(t, err)
 		assert.Equal(t, testRemote, got)
-
-		t.Cleanup(func() {
-			err := os.RemoveAll(testVDMMetaFilePath)
-			require.NoError(t, err)
-		})
 	})
 
 	t.Run("GetSpecsFromFile", func(t *testing.T) {
-		spec, err := GetSpecFromFile(testSpecFilePath)
-		require.NoError(t, err)
-		assert.Equal(t, 5, len(spec.Remotes))
-
-		t.Cleanup(func() {
+		defer t.Cleanup(func() {
 			err := os.RemoveAll(testVDMMetaFilePath)
 			require.NoError(t, err)
 		})
+
+		spec, err := GetSpecFromFile(testSpecFilePath)
+		require.NoError(t, err)
+		assert.Equal(t, 5, len(spec.Remotes))
 	})
 }

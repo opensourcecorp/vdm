@@ -21,7 +21,10 @@ var rootCmd = cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		MaybeSetDebug()
 		if len(args) == 0 {
-			cmd.Help()
+			err := cmd.Help()
+			if err != nil {
+				message.Fatalf("failed to print help message, somehow")
+			}
 			os.Exit(0)
 		}
 	},

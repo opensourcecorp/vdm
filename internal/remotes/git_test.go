@@ -23,7 +23,8 @@ func TestSyncGit(t *testing.T) {
 	spec := getTestGitSpec()
 	err := SyncGit(spec)
 	require.NoError(t, err)
-	t.Cleanup(func() {
+
+	defer t.Cleanup(func() {
 		if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
@@ -54,7 +55,8 @@ func TestCheckGitAvailable(t *testing.T) {
 func TestGitClone(t *testing.T) {
 	spec := getTestGitSpec()
 	cloneErr := gitClone(spec)
-	t.Cleanup(func() {
+
+	defer t.Cleanup(func() {
 		if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
