@@ -29,9 +29,12 @@ if [[ "${current_git_branch}" == 'main' ]] ; then
   fi
 
   # Fail if we forgot to bump versions across files
-  old_git_status="$(git status | grep -i -E 'modified')"
+  #
+  # Note the "|| echo ''"s -- this is because grep throws a non-zero exit if it
+  # can't find a match, and it kills the script
+  old_git_status="$(git status | grep -i -E 'modified' || echo '')"
   make -s bump-versions old_version="${current_listed_version}" > /dev/null
-  new_git_status="$(git status | grep -i -E 'modified')"
+  new_git_status="$(git status | grep -i -E 'modified' || echo '')"
   if [[ "$(diff <(echo "${old_git_status}") <(echo "${new_git_status}") | wc -l)" -gt 0 ]] ; then
     printf 'ERROR: Files modified by version-bump check -- did you forget to update versions across the repo to match VERSION?\n' > /dev/stderr
     failures+=('forgot-to-bump-other-versions')
