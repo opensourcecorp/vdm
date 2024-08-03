@@ -10,7 +10,7 @@ import (
 )
 
 // !!! DO NOT TOUCH, the version-bumper script handles updating this !!!
-const vdmVersion string = "v0.2.1"
+const vdmVersion string = "v0.3.0"
 
 var rootCmd = cobra.Command{
 	Use:              "vdm",
@@ -19,7 +19,7 @@ var rootCmd = cobra.Command{
 	TraverseChildren: true,
 	Version:          vdmVersion,
 	Run: func(cmd *cobra.Command, args []string) {
-		MaybeSetDebug()
+		maybeSetDebug()
 		if len(args) == 0 {
 			message.Errorf("You must provide a subcommand to vdm")
 			err := cmd.Help()
@@ -53,13 +53,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&rootFlagValues.SpecFilePath, specFilePathFlagKey, "./vdm.yaml", "Path to vdm specfile")
 	err = viper.BindPFlag(specFilePathFlagKey, rootCmd.PersistentFlags().Lookup(specFilePathFlagKey))
 	if err != nil {
-		message.Fatalf("internal error: unable to bind state of flag --%s", specFilePathFlagKey)
+		message.Fatalf("internal error: unable to bind state of flag --%s: %v", specFilePathFlagKey, err)
 	}
 
 	rootCmd.PersistentFlags().BoolVar(&rootFlagValues.Debug, debugFlagKey, false, "Show debug messages during runtime")
 	err = viper.BindPFlag(debugFlagKey, rootCmd.PersistentFlags().Lookup(debugFlagKey))
 	if err != nil {
-		message.Fatalf("internal error: unable to bind state of flag --%s", debugFlagKey)
+		message.Fatalf("internal error: unable to bind state of flag --%s: %v", debugFlagKey, err)
 	}
 
 	rootCmd.AddCommand(syncCmd)

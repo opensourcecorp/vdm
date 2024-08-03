@@ -32,6 +32,14 @@ type Remote struct {
 	// Destination is the relative or absolute path on disk that Source will be
 	// placed at
 	Destination string `json:"destination" yaml:"destination"`
+	// TryLocalSource helps define behavior driven by the `try-local-sources`
+	// CLI flag, which allows checking for a local version of a Remote Source,
+	// and falling back to the other Source field if the local path does not
+	// exist. This is especially useful for when you might be developing one of
+	// your Remotes in a nearby directory, and want to copy over that version of
+	// the Remote and not keep pushing-and-pulling to a Git upstream just to
+	// test the changes.
+	TryLocalSource string `json:"try_local_source" yaml:"try_local_source"`
 }
 
 const (
