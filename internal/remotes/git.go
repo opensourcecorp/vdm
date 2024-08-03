@@ -20,15 +20,15 @@ func SyncGit(remote vdmspec.Remote) error {
 
 	if remote.Version != "latest" {
 		message.Infof("%s: Setting specified version...", remote.OpMsg())
-		checkoutCmd := exec.Command("git", "-C", remote.LocalPath, "checkout", remote.Version)
+		checkoutCmd := exec.Command("git", "-C", remote.Destination, "checkout", remote.Version)
 		checkoutOutput, err := checkoutCmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
 		}
 	}
 
-	message.Debugf("removing .git dir for local path '%s'", remote.LocalPath)
-	dotGitPath := filepath.Join(remote.LocalPath, ".git")
+	message.Debugf("removing .git dir for local path '%s'", remote.Destination)
+	dotGitPath := filepath.Join(remote.Destination, ".git")
 	err = os.RemoveAll(dotGitPath)
 	if err != nil {
 		return fmt.Errorf("removing directory %s: %w", dotGitPath, err)
@@ -51,7 +51,7 @@ func checkGitAvailable() error {
 func gitClone(remote vdmspec.Remote) error {
 	err := checkGitAvailable()
 	if err != nil {
-		return fmt.Errorf("remote '%s' is a git type, but git may not installed/available on PATH: %w", remote.Remote, err)
+		return fmt.Errorf("remote '%s' is a git type, but git may not installed/available on PATH: %w", remote.Source, err)
 	}
 
 	// If users want "latest", then we can just do a depth-one clone and
@@ -60,10 +60,10 @@ func gitClone(remote vdmspec.Remote) error {
 	var cloneCmdArgs []string
 	if remote.Version == "latest" {
 		message.Debugf("%s: version specified as 'latest', so making shallow clone and skipping separate checkout operation", remote.OpMsg())
-		cloneCmdArgs = []string{"clone", "--depth=1", remote.Remote, remote.LocalPath}
+		cloneCmdArgs = []string{"clone", "--depth=1", remote.Source, remote.Destination}
 	} else {
 		message.Debugf("%s: version specified as NOT latest, so making regular clone and will make separate checkout operation", remote.OpMsg())
-		cloneCmdArgs = []string{"clone", remote.Remote, remote.LocalPath}
+		cloneCmdArgs = []string{"clone", remote.Source, remote.Destination}
 	}
 
 	message.Infof("%s: Retrieving...", remote.OpMsg())

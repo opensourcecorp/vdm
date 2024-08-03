@@ -16,14 +16,14 @@ func (spec Spec) Validate() error {
 	for remoteIndex, remote := range spec.Remotes {
 		// Remote field
 		message.Debugf("Index #%d: validating field 'Remote' for %+v", remoteIndex, remote)
-		if len(remote.Remote) == 0 {
+		if len(remote.Source) == 0 {
 			allErrors = append(allErrors, errors.New("all 'remote' fields must be non-zero length"))
 		}
 		protocolRegex := regexp.MustCompile(`(http(s?)://|git://|git@)`)
-		if !protocolRegex.MatchString(remote.Remote) {
+		if !protocolRegex.MatchString(remote.Source) {
 			allErrors = append(
 				allErrors,
-				fmt.Errorf("remote #%d provided as '%s', but all 'remote' fields must begin with a protocol specifier or other valid prefix (e.g. 'https://', '(user|git)@', etc.)", remoteIndex, remote.Remote),
+				fmt.Errorf("remote #%d provided as '%s', but all 'remote' fields must begin with a protocol specifier or other valid prefix (e.g. 'https://', '(user|git)@', etc.)", remoteIndex, remote.Source),
 			)
 		}
 
@@ -33,12 +33,12 @@ func (spec Spec) Validate() error {
 			allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length. If you don't care about the version (even though you probably should), then use 'latest'"))
 		}
 		if remote.Type == FileType && len(remote.Version) > 0 {
-			message.Warnf("NOTE: Remote #%d '%s' specified as type '%s', which does not take explicit version info (you provided '%s'); ignoring version field", remoteIndex, remote.Remote, remote.Type, remote.Version)
+			message.Warnf("NOTE: Remote #%d '%s' specified as type '%s', which does not take explicit version info (you provided '%s'); ignoring version field", remoteIndex, remote.Source, remote.Type, remote.Version)
 		}
 
 		// LocalPath field
 		message.Debugf("Index #%d: validating field 'LocalPath' for %+v", remoteIndex, remote)
-		if len(remote.LocalPath) == 0 {
+		if len(remote.Destination) == 0 {
 			allErrors = append(allErrors, errors.New("all 'local_path' fields must be non-zero length"))
 		}
 

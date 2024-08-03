@@ -19,10 +19,19 @@ type Spec struct {
 // Remote defines the structure of each remote configuration in the vdm
 // specfile.
 type Remote struct {
-	Type      string `json:"type,omitempty" yaml:"type,omitempty"`
-	Remote    string `json:"remote" yaml:"remote"`
-	Version   string `json:"version,omitempty" yaml:"version,omitempty"`
-	LocalPath string `json:"local_path" yaml:"local_path"`
+	// Type is the type of Source, e.g. git, archive, etc.
+	Type string `json:"type,omitempty" yaml:"type,omitempty"`
+	// Source is the fully-qualifed location from which the Remote is retrieved,
+	// e.g. "https://github.com/some-org/some-repo"
+	Source string `json:"source" yaml:"source"`
+	// Version states the version requested from Source, and is then later used
+	// for tracking purposes. Version can be anything supported by the Type
+	// field -- for example, for the "git" Type, this can be a tag, a branch
+	// name, or a commit hash. It can also be the word "latest".
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
+	// Destination is the relative or absolute path on disk that Source will be
+	// placed at
+	Destination string `json:"destination" yaml:"destination"`
 }
 
 const (
@@ -39,11 +48,11 @@ const (
 // MakeMetaFilePath constructs the metafile path that vdm will use to track a
 // remote's state on disk.
 func (r Remote) MakeMetaFilePath() string {
-	metaFilePath := filepath.Join(r.LocalPath, MetaFileName)
+	metaFilePath := filepath.Join(r.Destination, MetaFileName)
 	// TODO: this is brittle, but it's the best I can think of right now
 	if r.Type == FileType {
-		fileDir := filepath.Dir(r.LocalPath)
-		fileName := filepath.Base(r.LocalPath)
+		fileDir := filepath.Dir(r.Destination)
+		fileName := filepath.Base(r.Destination)
 		// converts to e.g. 'VDMMETA_http.proto'
 		metaFilePath = filepath.Join(fileDir, fmt.Sprintf("%s_%s", MetaFileName, fileName))
 	}
@@ -135,7 +144,7 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 // performed at the moment
 func (r Remote) OpMsg() string {
 	if r.Version != "" {
-		return fmt.Sprintf("%s@%s --> %s", r.Remote, r.Version, r.LocalPath)
+		return fmt.Sprintf("%s@%s --> %s", r.Source, r.Version, r.Destination)
 	}
-	return fmt.Sprintf("%s --> %s", r.Remote, r.LocalPath)
+	return fmt.Sprintf("%s --> %s", r.Source, r.Destination)
 }
