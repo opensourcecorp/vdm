@@ -5,12 +5,14 @@ package message
 import (
 	"fmt"
 	"os"
+
+	"github.com/opensourcecorp/vdm/cmd/flagvars"
 )
 
 // Debugf prints out debug-level information messages with a formatting
 // directive.
 func Debugf(format string, args ...any) {
-	if os.Getenv("DEBUG") != "" {
+	if os.Getenv(flagvars.Debug) != "" {
 		fmt.Printf("DEBUG: "+format+"\n", args...)
 	}
 }

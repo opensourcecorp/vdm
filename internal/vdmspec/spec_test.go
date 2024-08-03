@@ -16,15 +16,15 @@ var (
 	testVDMMetaFilePath = filepath.Join(testVDMRoot, MetaFileName)
 
 	testRemote = Remote{
-		Remote:    "https://some-remote",
-		Version:   "v1.0.0",
-		LocalPath: testVDMRoot,
+		Source:      "https://some-remote",
+		Version:     "v1.0.0",
+		Destination: testVDMRoot,
 	}
 
 	testSpecFilePath = filepath.Join(testVDMRoot, "vdm.yaml")
 
 	testVDMMetaContents = fmt.Sprintf(
-		`{"remote": "https://some-remote", "version": "v1.0.0", "local_path": "%s"}`,
+		`{"source": "https://some-remote", "version": "v1.0.0", "destination": "%s"}`,
 		testVDMRoot,
 	)
 )
@@ -51,7 +51,7 @@ func TestVDMMeta(t *testing.T) {
 		})
 
 		// Needs to have parent dir(s) exist for write to work
-		err := os.MkdirAll(testRemote.LocalPath, 0644)
+		err := os.MkdirAll(testRemote.Destination, 0644)
 		require.NoError(t, err)
 
 		err = testRemote.WriteVDMMeta()

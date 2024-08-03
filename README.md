@@ -27,9 +27,9 @@ retrieve them whenever you need them.
 ### Installation
 
 `vdm` can be installed from [its GitHub Releases
-page](https://github.com/opensourcecorp/vdm/releases). There is a zipped binary
-for major platforms & architectures, and those are indicated in the Asset file
-name. For example, if you have an M2 macOS laptop, you would download the
+page](https://github.com/opensourcecorp/vdm/releases). There is a compressed
+binary for major platforms & architectures, and those are indicated in the Asset
+file name. For example, if you have an M2 macOS laptop, you would download the
 `vdm_darwin-arm64.tar.gz` file, and extract it to somewhere on your `$PATH`.
 
 If you have a recent version of the Go toolchain available, you can also install
@@ -50,14 +50,14 @@ revisions & where you want them to live on your filesystem:
 ```yaml
 remotes:
 
-  - type:       "git" # the default, and so can be omitted if desired
-    remote:     "https://github.com/opensourcecorp/go-common" # can specify as 'git@...' to use SSH instead
-    local_path: "./deps/go-common"
-    version:    "v0.2.0" # tag example; can also be a branch, commit hash, or the word 'latest'
+  - type:        "git" # the default, and so can be omitted if desired
+    source:      "https://github.com/opensourcecorp/go-common" # can specify as 'git@...' to use SSH instead
+    version:     "v0.2.0" # tag example; can also be a branch, commit hash, or the word 'latest'
+    destination: "./deps/go-common"
 
-  - type:       "file" # the 'file' type assumes the version is in the remote field itself somehow, so 'version' can be omitted
-    remote:     "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto"
-    local_path: "./deps/proto/http/http.proto"
+  - type:        "file" # the 'file' type assumes the version is in the remote field itself somehow, so 'version' can be omitted
+    source:      "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto"
+    destination: "./deps/proto/http/http.proto"
 ```
 
 You can have as many dependency specifications in that array as you want, and

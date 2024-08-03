@@ -12,10 +12,10 @@ import (
 func getTestGitSpec() vdmspec.Remote {
 	specLocalPath := "./deps/go-common"
 	return vdmspec.Remote{
-		Type:      "git",
-		Remote:    "https://github.com/opensourcecorp/go-common",
-		Version:   "v0.2.0",
-		LocalPath: specLocalPath,
+		Type:        "git",
+		Source:      "https://github.com/opensourcecorp/go-common",
+		Version:     "v0.2.0",
+		Destination: specLocalPath,
 	}
 }
 
@@ -25,7 +25,7 @@ func TestSyncGit(t *testing.T) {
 	require.NoError(t, err)
 
 	defer t.Cleanup(func() {
-		if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
+		if cleanupErr := os.RemoveAll(spec.Destination); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
 	})
@@ -57,7 +57,7 @@ func TestGitClone(t *testing.T) {
 	cloneErr := gitClone(spec)
 
 	defer t.Cleanup(func() {
-		if cleanupErr := os.RemoveAll(spec.LocalPath); cleanupErr != nil {
+		if cleanupErr := os.RemoveAll(spec.Destination); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
 	})

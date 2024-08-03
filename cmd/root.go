@@ -10,34 +10,36 @@ import (
 )
 
 // !!! DO NOT TOUCH, the version-bumper script handles updating this !!!
-const vdmVersion string = "v0.2.1"
+const vdmVersion string = "v0.3.0"
 
 var rootCmd = cobra.Command{
 	Use:              "vdm",
 	Short:            "vdm -- a Versioned-Dependency Manager",
-	Long:             "vdm is used to manage arbitrary remote dependencies",
+	Long:             "vdm is used to manage retrieval of arbitrary remote dependencies",
 	TraverseChildren: true,
 	Version:          vdmVersion,
 	Run: func(cmd *cobra.Command, args []string) {
-		MaybeSetDebug()
+		maybeSetDebug()
 		if len(args) == 0 {
+			message.Errorf("You must provide a subcommand to vdm")
 			err := cmd.Help()
 			if err != nil {
 				message.Fatalf("failed to print help message, somehow")
 			}
-			os.Exit(0)
+			os.Exit(1)
 		}
 	},
 }
 
+// rootFlags defines the CLI flags for the root command.
 type rootFlags struct {
 	SpecFilePath string
 	Debug        bool
 }
 
-// RootFlagValues contains an initalized [rootFlags] struct with populated
+// rootFlagValues contains an initalized [rootFlags] struct with populated
 // values.
-var RootFlagValues rootFlags
+var rootFlagValues rootFlags
 
 // Flag name keys
 const (
@@ -48,16 +50,16 @@ const (
 func init() {
 	var err error
 
-	rootCmd.PersistentFlags().StringVar(&RootFlagValues.SpecFilePath, specFilePathFlagKey, "./vdm.yaml", "Path to vdm specfile")
+	rootCmd.PersistentFlags().StringVar(&rootFlagValues.SpecFilePath, specFilePathFlagKey, "./vdm.yaml", "Path to vdm specfile")
 	err = viper.BindPFlag(specFilePathFlagKey, rootCmd.PersistentFlags().Lookup(specFilePathFlagKey))
 	if err != nil {
-		message.Fatalf("internal error: unable to bind state of flag --%s", specFilePathFlagKey)
+		message.Fatalf("internal error: unable to bind state of flag --%s: %v", specFilePathFlagKey, err)
 	}
 
-	rootCmd.PersistentFlags().BoolVar(&RootFlagValues.Debug, debugFlagKey, false, "Show debug messages during runtime")
+	rootCmd.PersistentFlags().BoolVar(&rootFlagValues.Debug, debugFlagKey, false, "Show debug messages during runtime")
 	err = viper.BindPFlag(debugFlagKey, rootCmd.PersistentFlags().Lookup(debugFlagKey))
 	if err != nil {
-		message.Fatalf("internal error: unable to bind state of flag --%s", debugFlagKey)
+		message.Fatalf("internal error: unable to bind state of flag --%s: %v", debugFlagKey, err)
 	}
 
 	rootCmd.AddCommand(syncCmd)
