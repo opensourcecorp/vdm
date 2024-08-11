@@ -10,7 +10,9 @@ import (
 
 func TestGetFilePathsInDirectory(t *testing.T) {
 	t.Run("works", func(t *testing.T) {
-		root := "../../testdata/filetree"
+		root, err := filepath.Abs("../../testdata/filetree")
+		require.NoError(t, err)
+
 		want := []string{
 			filepath.Join(root, "top-file"),
 			filepath.Join(root, "subdir", "subdir-file"),
