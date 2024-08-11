@@ -16,6 +16,11 @@ type Spec struct {
 	Remotes []Remote `json:"remotes" yaml:"remotes"`
 }
 
+type Remoter interface {
+	Sync() error
+	Cache() error
+}
+
 // Remote defines the structure of each remote configuration in the vdm
 // specfile.
 type Remote struct {
