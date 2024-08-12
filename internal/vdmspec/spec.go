@@ -16,15 +16,24 @@ type Spec struct {
 	Remotes []Remote `json:"remotes" yaml:"remotes"`
 }
 
+// Remoter defines behavior that different remote types must exhibit
 type Remoter interface {
-	Sync() error
+	// Cache should retrieve the remote, and cache it as an archive in
+	// VDM_HOME's cache
 	Cache() error
+	// Sync should unpack the archive from the cache in VDM_HOME to the
+	// specified destination
+	Sync() error
+	// GetRemote returns the [Remote.Source] value
+	GetSource() string
+	// GetRemote returns the [Remote.Version] value
+	GetVersion() string
 }
 
 // Remote defines the structure of each remote configuration in the vdm
 // specfile.
 type Remote struct {
-	// Type is the type of Source, e.g. git, archive, etc.
+	// Type is the type of Source, e.g. git, archive, file, etc.
 	Type string `json:"type,omitempty" yaml:"type,omitempty"`
 	// Source is the fully-qualifed location from which the Remote is retrieved,
 	// e.g. "https://github.com/some-org/some-repo"
@@ -33,12 +42,12 @@ type Remote struct {
 	// for tracking purposes. Version can be anything supported by the Type
 	// field -- for example, for the "git" Type, this can be a tag, a branch
 	// name, or a commit hash. It can also be the word "latest".
-	Version string `json:"version,omitempty" yaml:"version,omitempty"`
+	Version string `json:"version" yaml:"version"`
 	// Destination is the relative or absolute path on disk that Source will be
 	// placed at
 	Destination string `json:"destination" yaml:"destination"`
 	// TryLocalSource helps define behavior driven by the `try-local-sources`
-	// CLI flag, which allows checking for a local version of a Remote Source,
+	// CLI flag, which allows checking for a local version of a [Remote.Source],
 	// and falling back to the other Source field if the local path does not
 	// exist. This is especially useful for when you might be developing one of
 	// your Remotes in a nearby directory, and want to copy over that version of
@@ -122,13 +131,13 @@ func (r Remote) GetVDMMeta() (Remote, error) {
 	return vdmMeta, nil
 }
 
-// GetSpecFromFile reads the specfile from disk (the path of which is determined
-// by the user-supplied flag value), and returns it for further processing of
-// remotes.
+// GetSpecFromFile reads the specfile from disk (the path of which may be
+// determined by the user-supplied flag value), and returns it for further
+// processing of remotes.
 func GetSpecFromFile(specFilePath string) (Spec, error) {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
-		message.Debugf("error reading specfile from disk: %w", err)
+		message.Debugf("error reading specfile from disk: %v", err)
 		return Spec{}, fmt.Errorf(
 			strings.Join([]string{
 				"there was a problem reading your vdm file from '%s' -- does it not exist?",
@@ -153,11 +162,8 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 	return spec, nil
 }
 
-// OpMsg constructs a loggable message outlining the specific operation being
-// performed at the moment
+// OpMsg constructs a loggable message outlining the specific remote details
+// being performed at the moment
 func (r Remote) OpMsg() string {
-	if r.Version != "" {
-		return fmt.Sprintf("%s@%s --> %s", r.Source, r.Version, r.Destination)
-	}
-	return fmt.Sprintf("%s --> %s", r.Source, r.Destination)
+	return fmt.Sprintf("%s@%s --> %s", r.Source, r.Version, r.Destination)
 }

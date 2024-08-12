@@ -10,12 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var syncCmd = &cobra.Command{
-	Use:   "sync",
-	Short: "Sync remotes based on specfile",
-	RunE:  syncExecute,
-}
-
 // syncFlags defines the CLI flags for the sync subcommand.
 type syncFlags struct {
 	TryLocalSources bool
@@ -30,17 +24,23 @@ const (
 	tryLocalSourcesFlagKey string = "try-local-sources"
 )
 
-func init() {
-	var err error
+func newSyncCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "sync",
+		Short: "Sync remotes based on specfile",
+		RunE:  executeSyncSubCommand,
+	}
 
-	syncCmd.Flags().BoolVar(&syncFlagValues.TryLocalSources, tryLocalSourcesFlagKey, false, "Whether to try & process local copies of sources before retrieving their remote copies")
-	err = viper.BindPFlag(tryLocalSourcesFlagKey, syncCmd.Flags().Lookup(tryLocalSourcesFlagKey))
+	cmd.Flags().BoolVar(&syncFlagValues.TryLocalSources, tryLocalSourcesFlagKey, false, "Whether to try & process local copies of sources before retrieving their remote copies")
+	err := viper.BindPFlag(tryLocalSourcesFlagKey, cmd.Flags().Lookup(tryLocalSourcesFlagKey))
 	if err != nil {
 		message.Fatalf("internal error: unable to bind state of flag --%s: %v", tryLocalSourcesFlagKey, err)
 	}
+
+	return cmd
 }
 
-func syncExecute(_ *cobra.Command, _ []string) error {
+func executeSyncSubCommand(_ *cobra.Command, _ []string) error {
 	maybeSetDebug()
 	maybeTryLocalSources()
 	if err := sync(); err != nil {
@@ -81,17 +81,24 @@ func sync() error {
 			continue
 		}
 
+		var determinedRemote vdmspec.Remoter
 		switch remote.Type {
 		case vdmspec.GitType, "":
-			if err := remotes.SyncGit(remote); err != nil {
-				return fmt.Errorf("syncing git remote: %w", err)
-			}
+			determinedRemote = remotes.Git{Remote: remote}
 		case vdmspec.FileType:
-			if err := remotes.SyncFile(remote); err != nil {
-				return fmt.Errorf("syncing file remote: %w", err)
-			}
+			determinedRemote = remotes.File{Remote: remote}
 		default:
 			return fmt.Errorf("unrecognized remote type '%s'", remote.Type)
+		}
+
+		err = determinedRemote.Cache()
+		if err != nil {
+			return fmt.Errorf("caching '%s' remote: %w", remote.Type, err)
+		}
+
+		err = determinedRemote.Sync()
+		if err != nil {
+			return fmt.Errorf("syncing '%s' remote: %w", remote.Type, err)
 		}
 
 		err = remote.WriteVDMMeta()

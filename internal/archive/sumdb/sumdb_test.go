@@ -8,6 +8,7 @@ import (
 
 	"github.com/opensourcecorp/vdm/cmd/vars"
 	"github.com/opensourcecorp/vdm/internal/archive"
+	"github.com/opensourcecorp/vdm/internal/remotes"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,9 +65,11 @@ func TestCacheRemote(t *testing.T) {
 	f, err := os.Open("../../../testdata/sumdb/sha256test.txt")
 	require.NoError(t, err)
 
-	remote := vdmspec.Remote{
-		Source:  "https://github.com/org/user",
-		Version: "v1.0.0",
+	remote := remotes.Git{
+		Remote: vdmspec.Remote{
+			Source:  "https://github.com/org/user",
+			Version: "v1.0.0",
+		},
 	}
 	cachedPath := filepath.Join(os.Getenv(vars.VDMHomeEnvVarName), "cache", StringAsBase64(remote.Source))
 

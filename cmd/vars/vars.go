@@ -40,6 +40,7 @@ func init() {
 	}
 }
 
+// GetVDMCacheDir returns the determined path to vdm's cache directory.
 func GetVDMCacheDir() string {
 	return filepath.Join(os.Getenv(VDMHomeEnvVarName), "cache")
 }

@@ -11,20 +11,28 @@ import (
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 )
 
-// SyncGit is the root of the sync operations for "git" remote types.
-func SyncGit(remote vdmspec.Remote) error {
+// Git defines the git remote type
+type Git struct {
+	vdmspec.Remote
+}
+
+// Cache provides the [vdmspec.Remoter.Cache] operations for "git" remote types.
+func (remote Git) Cache() error {
+	return errors.New("not implemented")
+}
+
+// Sync provides the [vdmspec.Remoter.Sync] operations for "git" remote types.
+func (remote Git) Sync() error {
 	err := gitClone(remote)
 	if err != nil {
-		return fmt.Errorf("cloing remote: %w", err)
+		return fmt.Errorf("cloning git repository: %w", err)
 	}
 
-	if remote.Version != "latest" {
-		message.Infof("%s: Setting specified version...", remote.OpMsg())
-		checkoutCmd := exec.Command("git", "-C", remote.Destination, "checkout", remote.Version)
-		checkoutOutput, err := checkoutCmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
-		}
+	message.Infof("%s: Setting specified version...", remote.OpMsg())
+	checkoutCmd := exec.Command("git", "-C", remote.Destination, "checkout", remote.Version)
+	checkoutOutput, err := checkoutCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
 	}
 
 	message.Debugf("removing .git dir for local path '%s'", remote.Destination)
@@ -35,6 +43,16 @@ func SyncGit(remote vdmspec.Remote) error {
 	}
 
 	return nil
+}
+
+// GetSource returns the Source field.
+func (remote Git) GetSource() string {
+	return remote.Source
+}
+
+// GetVersion returns the Version field.
+func (remote Git) GetVersion() string {
+	return remote.Version
 }
 
 func checkGitAvailable() error {
@@ -48,23 +66,13 @@ func checkGitAvailable() error {
 	return nil
 }
 
-func gitClone(remote vdmspec.Remote) error {
+func gitClone(remote Git) error {
 	err := checkGitAvailable()
 	if err != nil {
 		return fmt.Errorf("remote '%s' is a git type, but git may not installed/available on PATH: %w", remote.Source, err)
 	}
 
-	// If users want "latest", then we can just do a depth-one clone and
-	// skip the checkout operation. But if they want non-latest, we need the
-	// full history to be able to find a specified revision
-	var cloneCmdArgs []string
-	if remote.Version == "latest" {
-		message.Debugf("%s: version specified as 'latest', so making shallow clone and skipping separate checkout operation", remote.OpMsg())
-		cloneCmdArgs = []string{"clone", "--depth=1", remote.Source, remote.Destination}
-	} else {
-		message.Debugf("%s: version specified as NOT latest, so making regular clone and will make separate checkout operation", remote.OpMsg())
-		cloneCmdArgs = []string{"clone", remote.Source, remote.Destination}
-	}
+	cloneCmdArgs := []string{"clone", remote.Source, remote.Destination}
 
 	message.Infof("%s: Retrieving...", remote.OpMsg())
 	cloneCmd := exec.Command("git", cloneCmdArgs...)
@@ -75,3 +83,5 @@ func gitClone(remote vdmspec.Remote) error {
 
 	return nil
 }
+
+var _ vdmspec.Remoter = Git{}

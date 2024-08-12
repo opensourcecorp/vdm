@@ -9,23 +9,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTestGitSpec() vdmspec.Remote {
+func getTestGitRemote() Git {
 	specLocalPath := "./deps/go-common"
-	return vdmspec.Remote{
-		Type:        "git",
-		Source:      "https://github.com/opensourcecorp/go-common",
-		Version:     "v0.2.0",
-		Destination: specLocalPath,
+	return Git{
+		Remote: vdmspec.Remote{
+			Type:        "git",
+			Source:      "https://github.com/opensourcecorp/go-common",
+			Version:     "v0.2.0",
+			Destination: specLocalPath,
+		},
 	}
 }
 
 func TestSyncGit(t *testing.T) {
-	spec := getTestGitSpec()
-	err := SyncGit(spec)
+	remote := getTestGitRemote()
+	err := remote.Sync()
 	require.NoError(t, err)
 
 	defer t.Cleanup(func() {
-		if cleanupErr := os.RemoveAll(spec.Destination); cleanupErr != nil {
+		if cleanupErr := os.RemoveAll(remote.Destination); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
 	})
@@ -53,11 +55,11 @@ func TestCheckGitAvailable(t *testing.T) {
 }
 
 func TestGitClone(t *testing.T) {
-	spec := getTestGitSpec()
-	cloneErr := gitClone(spec)
+	remote := getTestGitRemote()
+	cloneErr := gitClone(remote)
 
 	defer t.Cleanup(func() {
-		if cleanupErr := os.RemoveAll(spec.Destination); cleanupErr != nil {
+		if cleanupErr := os.RemoveAll(remote.Destination); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
 	})

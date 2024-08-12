@@ -16,7 +16,8 @@ import (
 // Much of the following functions taken from:
 // https://www.arthurkoziel.com/writing-tar-gz-files-in-go/
 
-// CreateArchive
+// CreateArchive writes a gzipped tarball based on the provided root directory
+// from which to construct the archive, and its target file name.
 func CreateArchive(rootDir string, archivePath string) (err error) {
 	if !strings.HasSuffix(archivePath, ".tar.gz") {
 		return errors.New("provided archive path must end in .tar.gz")

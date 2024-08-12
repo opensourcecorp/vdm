@@ -12,8 +12,18 @@ import (
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 )
 
-// SyncFile is the root of the sync operations for "file" remote types.
-func SyncFile(remote vdmspec.Remote) error {
+// File defines the file remote type
+type File struct {
+	vdmspec.Remote
+}
+
+// Cache provides the [vdmspec.Remoter.Cache] operations for "file" remote types.
+func (remote File) Cache() error {
+	return errors.New("not implemented")
+}
+
+// Sync provides the [vdmspec.Remoter.Sync] operations for "file" remote types.
+func (remote File) Sync() error {
 	fileExists, err := checkFileExists(remote)
 	if err != nil {
 		return fmt.Errorf("checking if file exists locally: %w", err)
@@ -32,7 +42,17 @@ func SyncFile(remote vdmspec.Remote) error {
 	return nil
 }
 
-func checkFileExists(remote vdmspec.Remote) (bool, error) {
+// GetSource returns the Source field.
+func (remote File) GetSource() string {
+	return remote.Source
+}
+
+// GetVersion returns the Version field.
+func (remote File) GetVersion() string {
+	return remote.Version
+}
+
+func checkFileExists(remote File) (bool, error) {
 	fullPath, err := filepath.Abs(remote.Destination)
 	if err != nil {
 		return false, fmt.Errorf("determining abspath for file '%s': %w", remote.Destination, err)
@@ -48,14 +68,14 @@ func checkFileExists(remote vdmspec.Remote) (bool, error) {
 	return true, nil
 }
 
-func retrieveFile(remote vdmspec.Remote) (err error) {
+func retrieveFile(remote File) (err error) {
 	resp, err := http.Get(remote.Source)
 	if err != nil {
 		return fmt.Errorf("retrieving remote file '%s': %w", remote.Source, err)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			err = errors.Join(fmt.Errorf("closing response body after remote file '%s' retrieval: %w", remote.Source, err))
+			err = errors.Join(err, fmt.Errorf("closing response body after remote file '%s' retrieval: %w", remote.Source, err))
 		}
 	}()
 
@@ -77,7 +97,7 @@ func retrieveFile(remote vdmspec.Remote) (err error) {
 	}
 	defer func() {
 		if closeErr := outFile.Close(); closeErr != nil {
-			err = errors.Join(fmt.Errorf("closing local file '%s' after remote file '%s' retrieval: %w", remote.Destination, remote.Source, err))
+			err = errors.Join(err, fmt.Errorf("closing local file '%s' after remote file '%s' retrieval: %w", remote.Destination, remote.Source, err))
 		}
 	}()
 
@@ -105,3 +125,5 @@ func ensureParentDirs(path string) error {
 
 	return nil
 }
+
+var _ vdmspec.Remoter = File{}

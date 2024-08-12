@@ -8,6 +8,7 @@ all: ci package package-debian
 
 ci: clean
 	@bash ./scripts/ci.sh
+	@make -s clean
 
 # test is just an alias for ci
 test: ci
