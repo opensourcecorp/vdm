@@ -70,12 +70,12 @@ func sync() error {
 			return fmt.Errorf("getting vdm metadata file for sync: %w", err)
 		}
 
-		if vdmMeta == (vdmspec.Remote{}) {
+		if vdmMeta == (vdmspec.RemoteTemplate{}) {
 			message.Infof("%s: %s not found at local path, will be created", remote.OpMsg(), vdmspec.MetaFileName)
 		} else {
 			if vdmMeta.Version != remote.Version && vdmMeta.Source != remote.Source {
 				message.Infof("%s: Will change '%s' from current local version spec '%s' to '%s'...", remote.OpMsg(), remote.Source, vdmMeta.Version, remote.Version)
-				panic("not implemented")
+				panic("jk not implemented")
 			}
 			message.Infof("%s: version unchanged in spec file, skipping", remote.OpMsg())
 			continue
@@ -84,9 +84,9 @@ func sync() error {
 		var determinedRemote vdmspec.Remoter
 		switch remote.Type {
 		case vdmspec.GitType, "":
-			determinedRemote = remotes.Git{Remote: remote}
+			determinedRemote = remotes.Git{RemoteTemplate: remote}
 		case vdmspec.FileType:
-			determinedRemote = remotes.File{Remote: remote}
+			determinedRemote = remotes.File{RemoteTemplate: remote}
 		default:
 			return fmt.Errorf("unrecognized remote type '%s'", remote.Type)
 		}

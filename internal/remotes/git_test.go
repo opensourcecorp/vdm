@@ -12,7 +12,7 @@ import (
 func getTestGitRemote() Git {
 	specLocalPath := "./deps/go-common"
 	return Git{
-		Remote: vdmspec.Remote{
+		RemoteTemplate: vdmspec.RemoteTemplate{
 			Type:        "git",
 			Source:      "https://github.com/opensourcecorp/go-common",
 			Version:     "v0.2.0",

@@ -15,7 +15,7 @@ const testVDMRoot = "../../testdata"
 var (
 	testVDMMetaFilePath = filepath.Join(testVDMRoot, MetaFileName)
 
-	testRemote = Remote{
+	testRemote = RemoteTemplate{
 		Source:      "https://some-remote",
 		Version:     "v1.0.0",
 		Destination: testVDMRoot,

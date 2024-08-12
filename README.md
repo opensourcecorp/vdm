@@ -50,9 +50,9 @@ revisions & where you want them to live on your filesystem:
 ```yaml
 remotes:
 
-  - type:        "git" # the default, and so can be omitted if desired
+  - type:        "git"
     source:      "https://github.com/opensourcecorp/go-common" # can specify as 'git@...' to use SSH instead
-    version:     "v0.2.0" # tag example; can also be a branch, commit hash, or the word 'latest'
+    version:     "v0.2.0" # tag example; can also be a branch, or a commit hash
     destination: "./deps/go-common"
 
   - type:        "file" # the 'file' type assumes the version is in the remote field itself somehow, so 'version' can be omitted

@@ -14,7 +14,7 @@ import (
 
 // File defines the file remote type
 type File struct {
-	vdmspec.Remote
+	vdmspec.RemoteTemplate
 }
 
 // Cache provides the [vdmspec.Remoter.Cache] operations for "file" remote types.

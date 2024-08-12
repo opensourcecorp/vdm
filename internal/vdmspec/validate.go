@@ -44,10 +44,12 @@ func (spec Spec) Validate() error {
 
 		// Type field
 		message.Debugf("Index #%d: validating field 'Type' for %+v", remoteIndex, remote)
+		if remote.Type == "" {
+			allErrors = append(allErrors, errors.New("all remotes must specify a 'type' field"))
+		}
 		typeMap := map[string]int{
 			GitType:  1,
-			"":       2, // also git
-			FileType: 3,
+			FileType: 2,
 		}
 		if _, ok := typeMap[remote.Type]; !ok {
 			allErrors = append(allErrors, fmt.Errorf("unrecognized remote type '%s'", remote.Type))

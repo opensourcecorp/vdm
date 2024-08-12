@@ -13,7 +13,7 @@ import (
 
 // Spec defines the overall structure of the vmd specfile.
 type Spec struct {
-	Remotes []Remote `json:"remotes" yaml:"remotes"`
+	Remotes []RemoteTemplate `json:"remotes" yaml:"remotes"`
 }
 
 // Remoter defines behavior that different remote types must exhibit
@@ -24,35 +24,36 @@ type Remoter interface {
 	// Sync should unpack the archive from the cache in VDM_HOME to the
 	// specified destination
 	Sync() error
-	// GetRemote returns the [Remote.Source] value
+	// GetRemote returns the [RemoteTemplate.Source] value
 	GetSource() string
-	// GetRemote returns the [Remote.Version] value
+	// GetRemote returns the [RemoteTemplate.Version] value
 	GetVersion() string
 }
 
-// Remote defines the structure of each remote configuration in the vdm
-// specfile.
-type Remote struct {
+// RemoteTemplate defines the template structure for each potential remote
+// configuration in the vdm specfile. This struct can be embedded into other
+// remote type structs to provide the common fields between them.
+type RemoteTemplate struct {
 	// Type is the type of Source, e.g. git, archive, file, etc.
-	Type string `json:"type,omitempty" yaml:"type,omitempty"`
+	Type string `json:"type" yaml:"type"`
 	// Source is the fully-qualifed location from which the Remote is retrieved,
 	// e.g. "https://github.com/some-org/some-repo"
 	Source string `json:"source" yaml:"source"`
 	// Version states the version requested from Source, and is then later used
 	// for tracking purposes. Version can be anything supported by the Type
 	// field -- for example, for the "git" Type, this can be a tag, a branch
-	// name, or a commit hash. It can also be the word "latest".
+	// name, or a commit hash.
 	Version string `json:"version" yaml:"version"`
 	// Destination is the relative or absolute path on disk that Source will be
 	// placed at
 	Destination string `json:"destination" yaml:"destination"`
 	// TryLocalSource helps define behavior driven by the `try-local-sources`
-	// CLI flag, which allows checking for a local version of a [Remote.Source],
-	// and falling back to the other Source field if the local path does not
-	// exist. This is especially useful for when you might be developing one of
-	// your Remotes in a nearby directory, and want to copy over that version of
-	// the Remote and not keep pushing-and-pulling to a Git upstream just to
-	// test the changes.
+	// CLI flag, which allows checking for a local version of a
+	// [RemoteTemplate.Source], and falling back to the other Source field if
+	// the local path does not exist. This is especially useful for when you
+	// might be developing one of your Remotes in a nearby directory, and want
+	// to copy over that version of the Remote and not keep pushing-and-pulling
+	// to a Git upstream just to test the changes.
 	TryLocalSource string `json:"try_local_source" yaml:"try_local_source"`
 }
 
@@ -69,7 +70,7 @@ const (
 
 // MakeMetaFilePath constructs the metafile path that vdm will use to track a
 // remote's state on disk.
-func (r Remote) MakeMetaFilePath() string {
+func (r RemoteTemplate) MakeMetaFilePath() string {
 	metaFilePath := filepath.Join(r.Destination, MetaFileName)
 	// TODO: this is brittle, but it's the best I can think of right now
 	if r.Type == FileType {
@@ -83,8 +84,8 @@ func (r Remote) MakeMetaFilePath() string {
 }
 
 // WriteVDMMeta writes the metafile contents to disk, the path of which is
-// determined by [Remote.MakeMetaFilePath].
-func (r Remote) WriteVDMMeta() error {
+// determined by [RemoteTemplate.MakeMetaFilePath].
+func (r RemoteTemplate) WriteVDMMeta() error {
 	metaFilePath := r.MakeMetaFilePath()
 	vdmMetaContent, err := yaml.Marshal(r)
 	if err != nil {
@@ -104,27 +105,27 @@ func (r Remote) WriteVDMMeta() error {
 
 // GetVDMMeta reads the metafile from disk, and returns it for further
 // processing.
-func (r Remote) GetVDMMeta() (Remote, error) {
+func (r RemoteTemplate) GetVDMMeta() (RemoteTemplate, error) {
 	metaFilePath := r.MakeMetaFilePath()
 	_, err := os.Stat(metaFilePath)
 	if errors.Is(err, os.ErrNotExist) {
-		return Remote{}, nil // this is ok, because it might literally not exist yet
+		return RemoteTemplate{}, nil // this is ok, because it might literally not exist yet
 	} else if err != nil {
-		return Remote{}, fmt.Errorf("couldn't check if %s exists at '%s': %w", MetaFileName, metaFilePath, err)
+		return RemoteTemplate{}, fmt.Errorf("couldn't check if %s exists at '%s': %w", MetaFileName, metaFilePath, err)
 	}
 
 	vdmMetaFile, err := os.ReadFile(metaFilePath)
 	if err != nil {
 		message.Debugf("error reading VMDMMETA from disk: %w", err)
-		return Remote{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
+		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
 	}
 	message.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
 
-	var vdmMeta Remote
+	var vdmMeta RemoteTemplate
 	err = yaml.Unmarshal(vdmMetaFile, &vdmMeta)
 	if err != nil {
 		message.Debugf("error during %s unmarshal: w", MetaFileName, err)
-		return Remote{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %w", MetaFileName, metaFilePath, err)
+		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %w", MetaFileName, metaFilePath, err)
 	}
 	message.Debugf("file %s unmarshalled: %+v", MetaFileName, vdmMeta)
 
@@ -164,6 +165,6 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 
 // OpMsg constructs a loggable message outlining the specific remote details
 // being performed at the moment
-func (r Remote) OpMsg() string {
+func (r RemoteTemplate) OpMsg() string {
 	return fmt.Sprintf("%s@%s --> %s", r.Source, r.Version, r.Destination)
 }

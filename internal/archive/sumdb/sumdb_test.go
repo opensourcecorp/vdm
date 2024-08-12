@@ -66,7 +66,7 @@ func TestCacheRemote(t *testing.T) {
 	require.NoError(t, err)
 
 	remote := remotes.Git{
-		Remote: vdmspec.Remote{
+		RemoteTemplate: vdmspec.RemoteTemplate{
 			Source:  "https://github.com/org/user",
 			Version: "v1.0.0",
 		},
