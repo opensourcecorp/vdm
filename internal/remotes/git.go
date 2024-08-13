@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/opensourcecorp/vdm/cmd/vars"
-	"github.com/opensourcecorp/vdm/internal/archive/sumdb"
+	"github.com/opensourcecorp/vdm/internal/archive/cache"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 )
@@ -21,14 +21,23 @@ type Git struct {
 
 // Cache provides the [vdmspec.Remoter.Cache] operations for "git" remote types.
 func (remote Git) Cache() (err error) {
-	tmpCachePath := filepath.Join(os.TempDir(), "vdm-tmp", filepath.Base(remote.Destination))
+	// tmpCachePath is where the actual retrieval is targeted, which is then
+	// later archived to the persistent cache
+	tmpCacheRoot := filepath.Join(os.TempDir(), "vdm-tmp")
+	tmpCachePath := filepath.Join(tmpCacheRoot, filepath.Base(remote.Source))
 	message.Debugf("tmpCachePath: %s", tmpCachePath)
+	defer func() {
+		if rmErr := os.RemoveAll(tmpCacheRoot); rmErr != nil {
+			err = errors.Join(err, fmt.Errorf("removing temporary cache path '%s': %w", tmpCacheRoot, rmErr))
+		}
+	}()
 
-	if err := os.RemoveAll(tmpCachePath); err != nil {
-		return fmt.Errorf("trying to clean up possibly-duplicate old cache data at %s: %w", tmpCachePath, err)
+	if err := os.RemoveAll(tmpCacheRoot); err != nil {
+		return fmt.Errorf("trying to clean up possibly-duplicate old temp cache data at '%s': %w", tmpCachePath, err)
 	}
 
-	err = gitClone(remote, tmpCachePath)
+	message.Infof("%s: Retrieving...", remote.OpMsg())
+	err = gitClone(remote.Source, tmpCachePath)
 	if err != nil {
 		return fmt.Errorf("cloning git repository: %w", err)
 	}
@@ -54,12 +63,23 @@ func (remote Git) Cache() (err error) {
 
 	// TODO-NOW: we need this to create two paths: one for the actual
 	// gzipped-tar cache, and one for the sumdb file
-	cachePath, err := os.Create(filepath.Join(vars.GetVDMCacheDir()))
-	sumdb.CacheRemote(remote)
+	cacheFilePath := filepath.Join(vars.GetVDMCacheDir(), cache.StringToBase64(remote.Source))
+	cacheFile, err := os.Create(cacheFilePath)
+	if err != nil {
+		return fmt.Errorf("preparing file for cache of git remote %s: %w", remote.Source, err)
+	}
+	defer func() {
+		if closeErr := cacheFile.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing cache file %s: %w", cacheFilePath, closeErr))
+		}
+	}()
 
-	// return nil
+	err = cache.AddRemote(remote, cacheFile)
+	if err != nil {
+		return fmt.Errorf("caching git remote %s: %w", remote.Source, err)
+	}
 
-	return errors.New("not implemented")
+	return err
 }
 
 // Sync provides the [vdmspec.Remoter.Sync] operations for "git" remote types.
@@ -88,16 +108,15 @@ func checkGitAvailable() error {
 	return nil
 }
 
-func gitClone(remote Git, dest string) error {
+func gitClone(src string, dest string) error {
 	err := checkGitAvailable()
 	if err != nil {
-		return fmt.Errorf("remote '%s' is a git type, but git may not installed/available on PATH: %w", remote.Source, err)
+		return fmt.Errorf("remote '%s' is a git type, but git may not installed/available on PATH: %w", src, err)
 	}
 
-	cloneCmdArgs := []string{"clone", remote.Source, dest}
+	cloneCmdArgs := []string{"clone", src, dest}
 	message.Debugf("git args: %v", cloneCmdArgs)
 
-	message.Infof("%s: Retrieving...", remote.OpMsg())
 	cloneCmd := exec.Command("git", cloneCmdArgs...)
 	cloneOutput, err := cloneCmd.CombinedOutput()
 	message.Debugf("git clone command output: %s", string(cloneOutput))

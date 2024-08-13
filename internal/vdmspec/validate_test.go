@@ -11,6 +11,7 @@ func TestValidate(t *testing.T) {
 	t.Run("passes", func(t *testing.T) {
 		spec := Spec{
 			Remotes: []RemoteTemplate{{
+				Type:        GitType,
 				Source:      "https://some-remote",
 				Version:     "v1.0.0",
 				Destination: "./deps/some-remote",

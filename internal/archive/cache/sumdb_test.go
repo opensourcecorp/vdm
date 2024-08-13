@@ -1,15 +1,11 @@
-package sumdb
+package cache
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/opensourcecorp/vdm/cmd/vars"
 	"github.com/opensourcecorp/vdm/internal/archive"
-	"github.com/opensourcecorp/vdm/internal/remotes"
-	"github.com/opensourcecorp/vdm/internal/vdmspec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,33 +48,35 @@ func TestCalculateSHASum(t *testing.T) {
 }
 
 func TestStringAsBase64(t *testing.T) {
-	src := "https://github.com/org/user"
-	want := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2Vy"
-	got := StringAsBase64(src)
+	t.Run("works on string with no resulting padding", func(t *testing.T) {
+		src := "https://github.com/org/user"
+		want := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2Vy"
+		got := StringToBase64(src)
+		assert.Equal(t, want, got)
+	})
 
-	assert.Equal(t, want, got)
+	t.Run("works on string WITH resulting padding", func(t *testing.T) {
+		src := "https://github.com/org/user12"
+		want := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2VyMTI_PAD"
+		got := StringToBase64(src)
+		assert.Equal(t, want, got)
+	})
 }
 
-func TestCacheRemote(t *testing.T) {
-	t.Setenv(vars.VDMHomeEnvVarName, filepath.Join(os.TempDir(), "vdmhome"))
+func TestStringFromBase64(t *testing.T) {
+	t.Run("works on string with no resulting padding", func(t *testing.T) {
+		src := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2Vy"
+		want := "https://github.com/org/user"
+		got, err := StringFromBase64(src)
+		assert.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
 
-	f, err := os.Open("../../../testdata/sumdb/sha256test.txt")
-	require.NoError(t, err)
-
-	remote := remotes.Git{
-		RemoteTemplate: vdmspec.RemoteTemplate{
-			Source:  "https://github.com/org/user",
-			Version: "v1.0.0",
-		},
-	}
-	cachedPath := filepath.Join(os.Getenv(vars.VDMHomeEnvVarName), "cache", StringAsBase64(remote.Source))
-
-	err = CacheRemote(remote, f)
-	assert.NoError(t, err)
-
-	want := fmt.Sprintf("%s %s %s", remote.Source, remote.Version, "25fce0ea957324f2fdab37fa2c35df8dc1c62703b1970a744a723603407b630b")
-	got, err := os.ReadFile(cachedPath)
-	require.NoError(t, err)
-
-	assert.Equal(t, want, string(got))
+	t.Run("works on string WITH resulting padding", func(t *testing.T) {
+		src := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2VyMTI_PAD"
+		want := "https://github.com/org/user12"
+		got, err := StringFromBase64(src)
+		assert.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
 }

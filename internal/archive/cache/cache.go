@@ -1,8 +1,6 @@
-package sumdb
+package cache
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -13,26 +11,15 @@ import (
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 )
 
-// CalculateSHASum takes an arbitrary [io.Reader] (such as an open file handle)
-// and calculates the SHA256 checksum for it.
-func CalculateSHASum(reader io.Reader) (string, error) {
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, reader); err != nil {
-		return "", fmt.Errorf("writing reader to hasher: %w", err)
-	}
-	sum := fmt.Sprintf("%x", hasher.Sum(nil))
-	return sum, nil
-}
-
-// CacheRemote uses the provided [vdmspec.Remoter] information along with a file
+// AddRemote uses the provided [vdmspec.Remoter] information along with a file
 // handle for a target archive to actually write the archive data.
-func CacheRemote(remote vdmspec.Remoter, archiveFileHandle io.Reader) (err error) {
+func AddRemote(remote vdmspec.Remoter, archiveFileHandle io.Reader) (err error) {
 	err = os.MkdirAll(vars.GetVDMCacheDir(), 0755)
 	if err != nil {
 		return fmt.Errorf("creating vdm cache directory %s: %w", vars.GetVDMCacheDir(), err)
 	}
 
-	cacheFileName := StringAsBase64(remote.GetSource())
+	cacheFileName := StringToBase64(remote.GetSource())
 	f, err := os.Create(filepath.Join(vars.GetVDMCacheDir(), cacheFileName))
 	if err != nil {
 		return fmt.Errorf("creating file %s: %w", cacheFileName, err)
@@ -56,14 +43,4 @@ func CacheRemote(remote vdmspec.Remoter, archiveFileHandle io.Reader) (err error
 	}
 
 	return err
-}
-
-// StringAsBase64 does what it says on the tin.
-func StringAsBase64(s string) string {
-	// We use base64-encoded names for caches, because remote sources have
-	// slashes and that can break FS pathing
-	data := []byte(s)
-	encodedBytes := make([]byte, base64.StdEncoding.EncodedLen(len(data)))
-	base64.StdEncoding.Encode(encodedBytes, data)
-	return string(encodedBytes)
 }

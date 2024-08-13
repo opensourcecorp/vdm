@@ -11,6 +11,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// MetaFileName is the name of the tracking file that vdm uses to record &
+	// track remote statuses on disk.
+	MetaFileName string = "VDMMETA"
+
+	// GitType represents the string to match against for git remote types.
+	GitType string = "git"
+	// FileType represents the string to match against for file remote types.
+	FileType string = "file"
+)
+
 // Spec defines the overall structure of the vmd specfile.
 type Spec struct {
 	Remotes []RemoteTemplate `json:"remotes" yaml:"remotes"`
@@ -56,17 +67,6 @@ type RemoteTemplate struct {
 	// to a Git upstream just to test the changes.
 	TryLocalSource string `json:"try_local_source" yaml:"try_local_source"`
 }
-
-const (
-	// MetaFileName is the name of the tracking file that vdm uses to record &
-	// track remote statuses on disk.
-	MetaFileName string = "VDMMETA"
-
-	// GitType represents the string to match against for git remote types.
-	GitType string = "git"
-	// FileType represents the string to match against for file remote types.
-	FileType string = "file"
-)
 
 // MakeMetaFilePath constructs the metafile path that vdm will use to track a
 // remote's state on disk.

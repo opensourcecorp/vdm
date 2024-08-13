@@ -2,5 +2,7 @@
 *.log
 *.out
 *cache*
+!internal/archive/cache
+!internal/archive/cache/**
 build/
 deps/

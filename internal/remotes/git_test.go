@@ -2,6 +2,7 @@ package remotes
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
@@ -9,9 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTestGitRemote() Git {
+func getTestGitRemote(t *testing.T) (Git, string) {
+	t.Helper()
 	specLocalPath := "./deps/go-common"
-	return Git{
+	remote := Git{
 		RemoteTemplate: vdmspec.RemoteTemplate{
 			Type:        "git",
 			Source:      "https://github.com/opensourcecorp/go-common",
@@ -19,15 +21,17 @@ func getTestGitRemote() Git {
 			Destination: specLocalPath,
 		},
 	}
+	dest := filepath.Join(os.TempDir(), "vdm-test", filepath.Base(remote.Source))
+	return remote, dest
 }
 
 func TestSyncGit(t *testing.T) {
-	remote := getTestGitRemote()
+	remote, dest := getTestGitRemote(t)
 	err := remote.Sync()
 	require.NoError(t, err)
 
 	defer t.Cleanup(func() {
-		if cleanupErr := os.RemoveAll(remote.Destination); cleanupErr != nil {
+		if cleanupErr := os.RemoveAll(dest); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
 	})
@@ -55,11 +59,11 @@ func TestCheckGitAvailable(t *testing.T) {
 }
 
 func TestGitClone(t *testing.T) {
-	remote := getTestGitRemote()
-	cloneErr := gitClone(remote)
+	remote, dest := getTestGitRemote(t)
+	cloneErr := gitClone(remote.Source, dest)
 
 	defer t.Cleanup(func() {
-		if cleanupErr := os.RemoveAll(remote.Destination); cleanupErr != nil {
+		if cleanupErr := os.RemoveAll(dest); cleanupErr != nil {
 			t.Fatalf("removing specLocalPath: %v", cleanupErr)
 		}
 	})
@@ -69,13 +73,13 @@ func TestGitClone(t *testing.T) {
 	})
 
 	t.Run("LocalPath is a directory, not a file", func(t *testing.T) {
-		outDir, err := os.Stat("./deps/go-common")
+		outDir, err := os.Stat(dest)
 		require.NoError(t, err)
 		assert.True(t, outDir.IsDir())
 	})
 
 	t.Run("a known file in the remote exists, and is a file", func(t *testing.T) {
-		sampleFile, err := os.Stat("./deps/go-common/go.mod")
+		sampleFile, err := os.Stat(filepath.Join(dest, "go.mod"))
 		require.NoError(t, err)
 		assert.False(t, sampleFile.IsDir())
 	})
