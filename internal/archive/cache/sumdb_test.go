@@ -57,7 +57,7 @@ func TestStringAsBase64(t *testing.T) {
 
 	t.Run("works on string WITH resulting padding", func(t *testing.T) {
 		src := "https://github.com/org/user12"
-		want := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2VyMTI_PAD"
+		want := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2VyMTI_EQ"
 		got := StringToBase64(src)
 		assert.Equal(t, want, got)
 	})
@@ -73,10 +73,24 @@ func TestStringFromBase64(t *testing.T) {
 	})
 
 	t.Run("works on string WITH resulting padding", func(t *testing.T) {
-		src := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2VyMTI_PAD"
+		src := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2VyMTI_EQ"
 		want := "https://github.com/org/user12"
 		got, err := StringFromBase64(src)
 		assert.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
+}
+
+func TestNonAlphaBase64(t *testing.T) {
+	t.Run("replacer works", func(t *testing.T) {
+		want := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2Vy_EQ"
+		got := replaceNonAlphaBase64Characters("aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2Vy=")
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("restorer works", func(t *testing.T) {
+		want := "aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2Vy="
+		got := restoreNonAlphaBase64Characters("aHR0cHM6Ly9naXRodWIuY29tL29yZy91c2Vy_EQ")
 		assert.Equal(t, want, got)
 	})
 }
