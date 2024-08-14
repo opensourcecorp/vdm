@@ -37,7 +37,7 @@ func TestCacheRemote(t *testing.T) {
 	}
 	cachedPath := filepath.Join(os.Getenv(vars.VDMHomeEnvVarName), "cache", cache.StringToBase64(remote.Source))
 
-	err = cache.AddRemote(remote, f)
+	err = cache.AddRemote(remote, "")
 	assert.NoError(t, err)
 
 	want := fmt.Sprintf("%s %s %s", remote.Source, remote.Version, "25fce0ea957324f2fdab37fa2c35df8dc1c62703b1970a744a723603407b630b")

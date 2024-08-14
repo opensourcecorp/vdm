@@ -29,8 +29,13 @@ func TestCalculateSHASum(t *testing.T) {
 	t.Run("works on a created archive file", func(t *testing.T) {
 		rootDir := "../../../testdata/filetree"
 		archivePath := filepath.Join(os.TempDir(), "archive-to-hash.tar.gz")
-		err := archive.CreateArchive(rootDir, archivePath)
+		unneededFile, err := archive.CreateArchive(rootDir, archivePath)
 		require.NoError(t, err)
+		// Need to close the returned file because that's the caller's job
+		t.Cleanup(func() {
+			err = unneededFile.Close()
+			require.NoError(t, err)
+		})
 
 		f, err := os.Open(archivePath)
 		require.NoError(t, err)

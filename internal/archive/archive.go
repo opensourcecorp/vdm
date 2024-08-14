@@ -17,31 +17,28 @@ import (
 // https://www.arthurkoziel.com/writing-tar-gz-files-in-go/
 
 // CreateArchive writes a gzipped tarball based on the provided root directory
-// from which to construct the archive, and its target file name.
-func CreateArchive(rootDir string, archivePath string) (err error) {
+// from which to construct the archive, and its target file name. It returns an
+// open file handle to the archive, which should be closed by the caller.
+func CreateArchive(rootDir string, archivePath string) (f *os.File, err error) {
 	if !strings.HasSuffix(archivePath, ".tar.gz") {
-		return errors.New("provided archive path must end in .tar.gz")
+		return nil, errors.New("provided archive path must end in .tar.gz")
 	}
 
 	rootDirAbs, err := filepath.Abs(rootDir)
 	if err != nil {
-		return fmt.Errorf("determining abspath of provided root dir %s: %w", rootDir, err)
+		return nil, fmt.Errorf("determining abspath of provided root dir %s: %w", rootDir, err)
 	}
 
 	archivePathAbs, err := filepath.Abs(archivePath)
 	if err != nil {
-		return fmt.Errorf("determining abspath of provided archive path %s: %w", archivePath, err)
+		return nil, fmt.Errorf("determining abspath of provided archive path %s: %w", archivePath, err)
 	}
 
 	buf, err := os.Create(archivePathAbs)
 	if err != nil {
-		return fmt.Errorf("opening target archive path: %w", err)
+		return nil, fmt.Errorf("opening target archive path: %w", err)
 	}
-	defer func() {
-		if closeErr := buf.Close(); closeErr != nil {
-			err = errors.Join(err, fmt.Errorf("closing target archive file: %w", closeErr))
-		}
-	}()
+	// NOTE: file not closed because it's returned, open, to the caller
 
 	// gzip and tar get their own writers, and note that they are chained -- tar
 	// writes to gzip, which writes to the buffer. So, we only need to write to
@@ -62,17 +59,17 @@ func CreateArchive(rootDir string, archivePath string) (err error) {
 
 	files, err := filetree.GetFilePathsInDirectory(rootDirAbs)
 	if err != nil {
-		return fmt.Errorf("populating list of files from %s: %w", rootDir, err)
+		return nil, fmt.Errorf("populating list of files from %s: %w", rootDir, err)
 	}
 
 	for _, fileName := range files {
 		err := addToArchive(tarWriter, rootDirAbs, fileName)
 		if err != nil {
-			return fmt.Errorf("adding %s to archive: %w", fileName, err)
+			return nil, fmt.Errorf("adding %s to archive: %w", fileName, err)
 		}
 	}
 
-	return err
+	return buf, err
 }
 
 func addToArchive(tarWriter *tar.Writer, rootDirAbs string, fileName string) (err error) {

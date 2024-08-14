@@ -5,11 +5,29 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
-// CalculateSHASum takes an arbitrary [io.Reader] (such as an open file handle)
-// and calculates the SHA256 checksum for it.
+// Caller's job to close file handle
+func GetOrCreateSumDBFile() (*os.File, error) {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("determining user homedir: %w", err)
+	}
+
+	sumDBPath := filepath.Join(homedir, ".vdm", "cache", "sumdb.json")
+	sumDBFile, err := os.OpenFile(sumDBPath, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("creating/opening sumdb file '%s': %w", sumDBPath, err)
+	}
+
+	return sumDBFile, err
+}
+
+// CalculateSHASum takes an arbitrary [io.Reader] (such as an open
+// file handle) and calculates the SHA256 checksum for it.
 func CalculateSHASum(reader io.Reader) (string, error) {
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, reader); err != nil {

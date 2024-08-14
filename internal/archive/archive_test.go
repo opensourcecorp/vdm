@@ -17,8 +17,13 @@ func TestCreateArchive(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	err := CreateArchive(archiveRoot, archivePath)
+	unneededFile, err := CreateArchive(archiveRoot, archivePath)
 	require.NoError(t, err)
+	// Need to close the returned file because that's the caller's job
+	t.Cleanup(func() {
+		err = unneededFile.Close()
+		require.NoError(t, err)
+	})
 
 	// TODO: add test for inspecting contents once we implement an archive
 	// extractor -- as of now, I'm just checking on the CLI if the expected tree

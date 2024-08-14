@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/opensourcecorp/vdm/cmd/vars"
 	"github.com/opensourcecorp/vdm/internal/archive/cache"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
@@ -61,20 +60,7 @@ func (remote Git) Cache() (err error) {
 		return fmt.Errorf("removing directory %s: %w", dotGitPath, err)
 	}
 
-	// TODO-NOW: we need this to create two paths: one for the actual
-	// gzipped-tar cache, and one for the sumdb file
-	cacheFilePath := filepath.Join(vars.GetVDMCacheDir(), cache.StringToBase64(remote.Source))
-	cacheFile, err := os.Create(cacheFilePath)
-	if err != nil {
-		return fmt.Errorf("preparing file for cache of git remote %s: %w", remote.Source, err)
-	}
-	defer func() {
-		if closeErr := cacheFile.Close(); closeErr != nil {
-			err = errors.Join(err, fmt.Errorf("closing cache file %s: %w", cacheFilePath, closeErr))
-		}
-	}()
-
-	err = cache.AddRemote(remote, cacheFile)
+	err = cache.AddRemote(remote, tmpCachePath)
 	if err != nil {
 		return fmt.Errorf("caching git remote %s: %w", remote.Source, err)
 	}
