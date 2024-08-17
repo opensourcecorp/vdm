@@ -20,7 +20,7 @@ func GetOrCreateSumDBFile() (*os.File, error) {
 	sumDBPath := filepath.Join(homedir, ".vdm", "cache", "sumdb.json")
 	sumDBFile, err := os.OpenFile(sumDBPath, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("creating/opening sumdb file '%s': %w", sumDBPath, err)
+		return nil, fmt.Errorf("creating/opening sumdb file %q: %w", sumDBPath, err)
 	}
 
 	return sumDBFile, err
@@ -53,7 +53,7 @@ func StringFromBase64(s string) (string, error) {
 	fixedString := restoreNonAlphaBase64Characters(s)
 	out, err := base64.StdEncoding.DecodeString(fixedString)
 	if err != nil {
-		return "", fmt.Errorf("decoding base64 string '%s': %w", s, err)
+		return "", fmt.Errorf("decoding base64 string %q: %w", s, err)
 	}
 	return string(out), nil
 }

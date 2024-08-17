@@ -31,10 +31,10 @@ type Spec struct {
 type Remoter interface {
 	// Cache should retrieve the remote, and cache it as an archive in
 	// VDM_HOME's cache
-	Cache() error
+	Cache() (string, error)
 	// Sync should unpack the archive from the cache in VDM_HOME to the
 	// specified destination
-	Sync() error
+	Sync(src, dest string) error
 	// GetRemote returns the [RemoteTemplate.Source] value
 	GetSource() string
 	// GetRemote returns the [RemoteTemplate.Version] value
@@ -89,12 +89,12 @@ func (r RemoteTemplate) WriteVDMMeta() error {
 	metaFilePath := r.MakeMetaFilePath()
 	vdmMetaContent, err := yaml.Marshal(r)
 	if err != nil {
-		return fmt.Errorf("writing %s: %w", metaFilePath, err)
+		return fmt.Errorf("writing %q: %w", metaFilePath, err)
 	}
 
 	vdmMetaContent = append(vdmMetaContent, []byte("\n")...)
 
-	message.Debugf("writing metadata file to '%s'", metaFilePath)
+	message.Debugf("writing metadata file to %q", metaFilePath)
 	err = os.WriteFile(metaFilePath, vdmMetaContent, 0644)
 	if err != nil {
 		return fmt.Errorf("writing metadata file: %w", err)
@@ -111,13 +111,13 @@ func (r RemoteTemplate) GetVDMMeta() (RemoteTemplate, error) {
 	if errors.Is(err, os.ErrNotExist) {
 		return RemoteTemplate{}, nil // this is ok, because it might literally not exist yet
 	} else if err != nil {
-		return RemoteTemplate{}, fmt.Errorf("couldn't check if %s exists at '%s': %w", MetaFileName, metaFilePath, err)
+		return RemoteTemplate{}, fmt.Errorf("couldn't check if %q exists at %q: %w", MetaFileName, metaFilePath, err)
 	}
 
 	vdmMetaFile, err := os.ReadFile(metaFilePath)
 	if err != nil {
 		message.Debugf("error reading VMDMMETA from disk: %w", err)
-		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
+		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the %s file from %q: %w", MetaFileName, metaFilePath, err)
 	}
 	message.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
 
@@ -125,9 +125,9 @@ func (r RemoteTemplate) GetVDMMeta() (RemoteTemplate, error) {
 	err = yaml.Unmarshal(vdmMetaFile, &vdmMeta)
 	if err != nil {
 		message.Debugf("error during %s unmarshal: w", MetaFileName, err)
-		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %w", MetaFileName, metaFilePath, err)
+		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the contents of the %s file at %q: %w", MetaFileName, metaFilePath, err)
 	}
-	message.Debugf("file %s unmarshalled: %+v", MetaFileName, vdmMeta)
+	message.Debugf("file %q unmarshalled: %+v", MetaFileName, vdmMeta)
 
 	return vdmMeta, nil
 }
@@ -141,7 +141,7 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 		message.Debugf("error reading specfile from disk: %v", err)
 		return Spec{}, fmt.Errorf(
 			strings.Join([]string{
-				"there was a problem reading your vdm file from '%s' -- does it not exist?",
+				"there was a problem reading your vdm file from %q -- does it not exist?",
 				"Either pass the --spec-file flag, or create one in the default location (details in the README).",
 				"Error details: %w"},
 				" ",
@@ -165,6 +165,6 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 
 // OpMsg constructs a loggable message outlining the specific remote details
 // being performed at the moment
-func (r RemoteTemplate) OpMsg() string {
-	return fmt.Sprintf("%s@%s --> %s", r.Source, r.Version, r.Destination)
+func (r RemoteTemplate) OpMsg(msg string) {
+	message.Infof("%s@%s --> %s: %s", r.Source, r.Version, r.Destination, msg)
 }

@@ -8,14 +8,14 @@ import (
 
 // GetFilePathsInDirectory traverse a directory tree from the provided root, and
 // returns a slice of the files in the tree.
-func GetFilePathsInDirectory(rootDir string) ([]string, error) {
-	rootDirAbs, err := filepath.Abs(rootDir)
+func GetFilePathsInDirectory(root string) ([]string, error) {
+	rootAbs, err := filepath.Abs(root)
 	if err != nil {
-		return nil, fmt.Errorf("determining abspath of rootDir %s: %w", rootDirAbs, err)
+		return nil, fmt.Errorf("determining abspath of root %q: %w", rootAbs, err)
 	}
 
 	var files []string
-	err = filepath.Walk(rootDirAbs, func(path string, f os.FileInfo, err error) error {
+	err = filepath.Walk(rootAbs, func(path string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/remotes"
@@ -63,50 +65,57 @@ func sync() error {
 	}
 
 	for _, remote := range spec.Remotes {
-		// process stored vdm metafile so we know what operations to actually
-		// perform for existing directories
-		vdmMeta, err := remote.GetVDMMeta()
-		if err != nil {
-			return fmt.Errorf("getting vdm metadata file for sync: %w", err)
-		}
+		// TODO: add this back, but it's unused right now
+		// // process stored vdm metafile so we know what operations to actually
+		// // perform for existing directories
+		// vdmMeta, err := remote.GetVDMMeta()
+		// if err != nil {
+		// 	return fmt.Errorf("getting vdm metadata file for sync: %w", err)
+		// }
 
-		if vdmMeta == (vdmspec.RemoteTemplate{}) {
-			message.Infof("%s: %s not found at local path, will be created", remote.OpMsg(), vdmspec.MetaFileName)
-		} else {
-			if vdmMeta.Version != remote.Version && vdmMeta.Source != remote.Source {
-				message.Infof("%s: Will change '%s' from current local version spec '%s' to '%s'...", remote.OpMsg(), remote.Source, vdmMeta.Version, remote.Version)
-				panic("jk not implemented")
-			}
-			message.Infof("%s: version unchanged in spec file, skipping", remote.OpMsg())
-			continue
-		}
+		// if vdmMeta == (vdmspec.RemoteTemplate{}) {
+		// 	message.Infof("%s: %s not found at local path, will be created", remote.OpMsg(), vdmspec.MetaFileName)
+		// } else {
+		// 	if vdmMeta.Version != remote.Version && vdmMeta.Source != remote.Source {
+		// 		message.Infof("%s: Will change %q from current local version spec %q to %q...", remote.OpMsg(), remote.Source, vdmMeta.Version, remote.Version)
+		// 		panic("jk not implemented")
+		// 	}
+		// 	message.Infof("%s: version unchanged in spec file, skipping", remote.OpMsg())
+		// 	continue
+		// }
 
 		var determinedRemote vdmspec.Remoter
 		switch remote.Type {
 		case vdmspec.GitType, "":
 			determinedRemote = remotes.Git{RemoteTemplate: remote}
 		case vdmspec.FileType:
-			determinedRemote = remotes.File{RemoteTemplate: remote}
+			return errors.New("cannot process 'file' remote types, as they are not yet fully implemented")
 		default:
-			return fmt.Errorf("unrecognized remote type '%s'", remote.Type)
+			return fmt.Errorf("unrecognized remote type %q", remote.Type)
 		}
 
-		err = determinedRemote.Cache()
+		cachePath, err := determinedRemote.Cache()
 		if err != nil {
-			return fmt.Errorf("caching '%s' remote: %w", remote.Type, err)
+			return fmt.Errorf("caching %q remote: %w", remote.Type, err)
 		}
 
-		err = determinedRemote.Sync()
+		absDestination, err := filepath.Abs(remote.Destination)
 		if err != nil {
-			return fmt.Errorf("syncing '%s' remote: %w", remote.Type, err)
+			return fmt.Errorf("determining abspath of remote's destination %q: %w", remote.Destination, err)
 		}
 
-		err = remote.WriteVDMMeta()
+		err = determinedRemote.Sync(cachePath, absDestination)
 		if err != nil {
-			return fmt.Errorf("could not write %s file to disk: %w", vdmspec.MetaFileName, err)
+			return fmt.Errorf("syncing %q remote: %w", remote.Type, err)
 		}
 
-		message.Infof("%s: Done.", remote.OpMsg())
+		// TODO: add back, as above
+		// err = remote.WriteVDMMeta()
+		// if err != nil {
+		// 	return fmt.Errorf("could not write %s file to disk: %w", vdmspec.MetaFileName, err)
+		// }
+
+		remote.OpMsg("Done.")
 	}
 
 	message.Infof("All done!")

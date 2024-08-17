@@ -61,14 +61,13 @@ func newRootCommand() *cobra.Command {
 func executeRootCommand(cmd *cobra.Command, args []string) error {
 	maybeSetDebug()
 	if len(args) == 0 {
-		message.Errorf("You must provide a subcommand to vdm")
 		err := cmd.Help()
 		if err != nil {
 			return errors.New("failed to print help message, somehow")
 		}
 	}
 
-	return nil
+	return errors.New("You must provide a subcommand to vdm")
 }
 
 // Execute wraps the primary execution logic for vdm's root command, and returns

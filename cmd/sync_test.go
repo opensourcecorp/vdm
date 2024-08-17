@@ -23,46 +23,50 @@ func TestSync(t *testing.T) {
 	// Need to override for test
 	rootFlagValues.SpecFilePath = testSpecFilePath
 	err = sync()
-	require.NoError(t, err)
 
-	defer t.Cleanup(func() {
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
 		for _, remote := range spec.Remotes {
 			err := os.RemoveAll(remote.Destination)
 			require.NoError(t, err)
 		}
 	})
 
-	t.Run("SyncGit", func(t *testing.T) {
-		t.Run("remotes[0] used a tag", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[0].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "v0.2.0", vdmMeta.Version)
-		})
+	// TODO: the following tests relied on VDMMETA-checks, which are now
+	// unimplemented until I figure out how I want to manage those in the future
 
-		t.Run("remotes[1] used 'latest'", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[1].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "latest", vdmMeta.Version)
-		})
+	// t.Run("SyncGit", func(t *testing.T) {
+	// 	t.Run("remotes[0] used a tag", func(t *testing.T) {
+	// 		vdmMeta, err := spec.Remotes[0].GetVDMMeta()
+	// 		require.NoError(t, err)
+	// 		assert.Equal(t, "v0.2.0", vdmMeta.Version)
+	// 	})
 
-		t.Run("remotes[2] used a branch", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[2].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "main", vdmMeta.Version)
-		})
+	// 	t.Run("remotes[1] used 'latest'", func(t *testing.T) {
+	// 		vdmMeta, err := spec.Remotes[1].GetVDMMeta()
+	// 		require.NoError(t, err)
+	// 		assert.Equal(t, "latest", vdmMeta.Version)
+	// 	})
 
-		t.Run("remotes[3] used a hash", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[3].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f", vdmMeta.Version)
-		})
-	})
+	// 	t.Run("remotes[2] used a branch", func(t *testing.T) {
+	// 		vdmMeta, err := spec.Remotes[2].GetVDMMeta()
+	// 		require.NoError(t, err)
+	// 		assert.Equal(t, "main", vdmMeta.Version)
+	// 	})
 
-	t.Run("SyncFile", func(t *testing.T) {
-		t.Run("remotes[4] had an implicit version", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[4].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "", vdmMeta.Version)
-		})
-	})
+	// 	t.Run("remotes[3] used a hash", func(t *testing.T) {
+	// 		vdmMeta, err := spec.Remotes[3].GetVDMMeta()
+	// 		require.NoError(t, err)
+	// 		assert.Equal(t, "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f", vdmMeta.Version)
+	// 	})
+	// })
+
+	// t.Run("SyncFile", func(t *testing.T) {
+	// 	t.Run("remotes[4] had an implicit version", func(t *testing.T) {
+	// 		vdmMeta, err := spec.Remotes[4].GetVDMMeta()
+	// 		require.NoError(t, err)
+	// 		assert.Equal(t, "", vdmMeta.Version)
+	// 	})
+	// })
 }

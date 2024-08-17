@@ -23,7 +23,7 @@ func (spec Spec) Validate() error {
 		if !protocolRegex.MatchString(remote.Source) {
 			allErrors = append(
 				allErrors,
-				fmt.Errorf("remote #%d provided as '%s', but all 'source' fields must begin with a protocol specifier or other valid prefix (e.g. 'https://', '(user|git)@', etc.)", remoteIndex, remote.Source),
+				fmt.Errorf("remote #%d provided as %q, but all 'source' fields must begin with a protocol specifier or other valid prefix (e.g. 'https://', '(user|git)@', etc.)", remoteIndex, remote.Source),
 			)
 		}
 
@@ -33,7 +33,7 @@ func (spec Spec) Validate() error {
 			allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length"))
 		}
 		if remote.Type == FileType && remote.Version != "" {
-			message.Warnf("NOTE: Remote #%d '%s' specified as type '%s', which does not take explicit version info (you provided '%s'); ignoring version field", remoteIndex, remote.Source, remote.Type, remote.Version)
+			message.Warnf("NOTE: Remote #%d %q specified as type %q, which does not take explicit version info (you provided %q); ignoring version field", remoteIndex, remote.Source, remote.Type, remote.Version)
 		}
 
 		// Destination field
@@ -52,7 +52,7 @@ func (spec Spec) Validate() error {
 			FileType: 2,
 		}
 		if _, ok := typeMap[remote.Type]; !ok {
-			allErrors = append(allErrors, fmt.Errorf("unrecognized remote type '%s'", remote.Type))
+			allErrors = append(allErrors, fmt.Errorf("unrecognized remote type %q", remote.Type))
 		}
 	}
 

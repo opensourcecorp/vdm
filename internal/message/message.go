@@ -20,7 +20,7 @@ func Debugf(format string, args ...any) {
 // Infof prints out debug-level information messages with a formatting
 // directive.
 func Infof(format string, args ...any) {
-	fmt.Printf(format+"\n", args...)
+	fmt.Printf("INFO: "+format+"\n", args...)
 }
 
 // Warnf prints out debug-level information messages with a formatting

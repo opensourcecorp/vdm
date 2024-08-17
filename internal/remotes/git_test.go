@@ -27,7 +27,7 @@ func getTestGitRemote(t *testing.T) (Git, string) {
 
 func TestSyncGit(t *testing.T) {
 	remote, dest := getTestGitRemote(t)
-	err := remote.Sync()
+	err := remote.Sync("", "")
 	require.NoError(t, err)
 
 	defer t.Cleanup(func() {

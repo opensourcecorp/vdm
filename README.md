@@ -51,20 +51,21 @@ revisions & where you want them to live on your filesystem:
 remotes:
 
   - type:        "git"
-    source:      "https://github.com/opensourcecorp/go-common" # can specify as 'git@...' to use SSH instead
+    source:      "https://github.com/opensourcecorp/vdm" # can specify as 'git@...' to use SSH instead
     version:     "v0.2.0" # tag example; can also be a branch, or a commit hash
-    destination: "./deps/go-common"
+    destination: "./deps/" # git types are themselves directories, so to prevent duplicating their top-level names just specify the root destination
 
-  - type:        "file" # the 'file' type assumes the version is in the remote field itself somehow, so 'version' can be omitted
-    source:      "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto"
-    destination: "./deps/proto/http/http.proto"
+  - type:        "git"
+    source:      "https://github.com/opensourcecorp/osc-infra"
+    version:     "main"
+    destination: "./deps/"
 ```
 
 You can have as many dependency specifications in that array as you want, and
 they can be stored wherever you want. By default, this spec file is called
 `vdm.yaml` and lives at the calling location (which is probably your repo's
 root), but you can call it whatever you want and point to it using the
-`--spec-file` flag to `vdm`.
+`--specfile-path` flag to `vdm`.
 
 Once you have a spec file, just run:
 
@@ -84,9 +85,10 @@ would look something like this:
 ```txt
 ./vdm.yaml
 ./deps/
-    go-common/
+    vdm/
         <stuff in that repo>
-    http.proto
+    osc-infra/
+        <stuff in that repo>
 ```
 
 ## Dependencies
@@ -113,4 +115,6 @@ running `vdm` commands.
 - Add `--keep-git-dir` flag so that `git` remote types don't wipe the `.git`
   directory at clone-time.
 
-- Support more than just `git` and `file` types, and make `file` better
+- Support more `remote` types, like `archive`.
+
+- Re-introduce the `file` remote type at some point.

@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/opensourcecorp/vdm/internal/filetree"
+	"github.com/opensourcecorp/vdm/internal/message"
 )
 
 // Much of the following functions taken from:
@@ -19,19 +21,20 @@ import (
 // CreateArchive writes a gzipped tarball based on the provided root directory
 // from which to construct the archive, and its target file name. It returns an
 // open file handle to the archive, which should be closed by the caller.
-func CreateArchive(rootDir string, archivePath string) (f *os.File, err error) {
+func CreateArchive(root string, archivePath string) (f *os.File, err error) {
 	if !strings.HasSuffix(archivePath, ".tar.gz") {
 		return nil, errors.New("provided archive path must end in .tar.gz")
 	}
 
-	rootDirAbs, err := filepath.Abs(rootDir)
+	rootAbs, err := filepath.Abs(root)
 	if err != nil {
-		return nil, fmt.Errorf("determining abspath of provided root dir %s: %w", rootDir, err)
+		return nil, fmt.Errorf("determining abspath of provided root dir %q: %w", root, err)
 	}
+	message.Debugf("root: %q, rootAbs: %q", root, rootAbs)
 
 	archivePathAbs, err := filepath.Abs(archivePath)
 	if err != nil {
-		return nil, fmt.Errorf("determining abspath of provided archive path %s: %w", archivePath, err)
+		return nil, fmt.Errorf("determining abspath of provided archive path %q: %w", archivePath, err)
 	}
 
 	buf, err := os.Create(archivePathAbs)
@@ -57,25 +60,78 @@ func CreateArchive(rootDir string, archivePath string) (f *os.File, err error) {
 		}
 	}()
 
-	files, err := filetree.GetFilePathsInDirectory(rootDirAbs)
+	files, err := filetree.GetFilePathsInDirectory(rootAbs)
 	if err != nil {
-		return nil, fmt.Errorf("populating list of files from %s: %w", rootDir, err)
+		return nil, fmt.Errorf("populating list of files from %q: %w", root, err)
 	}
 
 	for _, fileName := range files {
-		err := addToArchive(tarWriter, rootDirAbs, fileName)
+		err := addToArchive(tarWriter, rootAbs, fileName)
 		if err != nil {
-			return nil, fmt.Errorf("adding %s to archive: %w", fileName, err)
+			return nil, fmt.Errorf("adding %q to archive: %w", fileName, err)
 		}
 	}
 
 	return buf, err
 }
 
-func addToArchive(tarWriter *tar.Writer, rootDirAbs string, fileName string) (err error) {
+func ExtractArchiveToDestination(src, dest string) error {
+	gzipFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("opening archive file: %w", err)
+	}
+
+	gzipReader, err := gzip.NewReader(gzipFile)
+	if err != nil {
+		log.Fatal("ExtractTarGz: NewReader failed")
+	}
+
+	tarReader := tar.NewReader(gzipReader)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return fmt.Errorf("Next() failed in tar reader: %w", err)
+		}
+
+		filePath := filepath.Join(dest, header.Name)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(filePath, 0755); err != nil {
+				return fmt.Errorf("making directory during tar extraction: %w", err)
+			}
+		case tar.TypeReg:
+			dirPath := filepath.Dir(filePath)
+			if err := os.MkdirAll(dirPath, 0755); err != nil {
+				return fmt.Errorf("making directory during tar extraction: %w", err)
+			}
+
+			outFile, err := os.Create(filePath)
+			if err != nil {
+				return fmt.Errorf("creating output file %q during tar extraction: %w", filePath, err)
+			}
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return fmt.Errorf("writing to output file %q during tar extraction: %w", filePath, err)
+			}
+			closeErr := outFile.Close()
+			if closeErr != nil {
+				return fmt.Errorf("closing output file used during tar extraction: %w", closeErr)
+			}
+		default:
+			return fmt.Errorf("unknown tar type '%b' in %q", header.Typeflag, filePath)
+		}
+	}
+
+	return nil
+}
+
+func addToArchive(tarWriter *tar.Writer, rootAbs string, fileName string) (err error) {
 	file, err := os.Open(fileName)
 	if err != nil {
-		return fmt.Errorf("opening file %s: %w", fileName, err)
+		return fmt.Errorf("opening file %q: %w", fileName, err)
 	}
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
@@ -85,20 +141,20 @@ func addToArchive(tarWriter *tar.Writer, rootDirAbs string, fileName string) (er
 
 	info, err := file.Stat()
 	if err != nil {
-		return fmt.Errorf("getting file info for %s: %w", fileName, err)
+		return fmt.Errorf("getting file info for %q: %w", fileName, err)
 	}
 
 	// Tar needs file headers, so create one from the file info
 	header, err := tar.FileInfoHeader(info, info.Name())
 	if err != nil {
-		return fmt.Errorf("creating tar header for %s: %w", fileName, err)
+		return fmt.Errorf("creating tar header for %q: %w", fileName, err)
 	}
 
-	topLevelDir, err := maybeGetTopLevelDir(rootDirAbs)
+	topLevelDir, err := maybeGetTopLevelDir(rootAbs)
 	if err != nil {
 		return fmt.Errorf("checking for top-level directory when adding to archive: %w", err)
 	}
-	fileNameClean := strings.ReplaceAll(fileName, rootDirAbs+string(filepath.Separator), "")
+	fileNameClean := strings.ReplaceAll(fileName, rootAbs+string(filepath.Separator), "")
 	if topLevelDir != "" {
 		fileNameClean = filepath.Join(topLevelDir, fileNameClean)
 	}
@@ -112,31 +168,19 @@ func addToArchive(tarWriter *tar.Writer, rootDirAbs string, fileName string) (er
 	// Write file header to the tar archive
 	err = tarWriter.WriteHeader(header)
 	if err != nil {
-		return fmt.Errorf("writing tar header for %s: %w", fileName, err)
+		return fmt.Errorf("writing tar header for %q: %w", fileName, err)
 	}
 
 	// Copy file content to tar archive
 	_, err = io.Copy(tarWriter, file)
 	if err != nil {
-		return fmt.Errorf("adding file %s to tar archive: %w", fileName, err)
+		return fmt.Errorf("adding file %q to tar archive: %w", fileName, err)
 	}
 
 	return err
 }
 
-func maybeGetTopLevelDir(rootDirAbs string) (topLevelDir string, err error) {
-	topLevelFileInfo, err := os.Stat(rootDirAbs)
-	if err != nil {
-		return "", fmt.Errorf("getting file info for %s: %w", rootDirAbs, err)
-	}
-
-	// We only want to include the top-level directory for archive pathing if
-	// it's *actually* a directory, obviously
-	if !topLevelFileInfo.IsDir() {
-		topLevelDir = ""
-	} else {
-		topLevelDir = filepath.Base(rootDirAbs)
-	}
-
+func maybeGetTopLevelDir(rootAbs string) (string, error) {
+	topLevelDir := filepath.Base(rootAbs)
 	return topLevelDir, nil
 }
