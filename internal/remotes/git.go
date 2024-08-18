@@ -64,7 +64,7 @@ func (remote Git) Cache() (cachePath string, err error) {
 
 // Sync provides the [vdmspec.Remoter.Sync] operations for "git" remote types.
 func (remote Git) Sync(src, dest string) error {
-	err := archive.ExtractArchiveToDestination(src, dest)
+	err := archive.ExtractTGZArchive(src, dest)
 	if err != nil {
 		return fmt.Errorf("syncing git cache for remote %q: %w", remote.GetSource(), err)
 	}
@@ -79,6 +79,17 @@ func (remote Git) GetSource() string {
 // GetVersion returns the Version field.
 func (remote Git) GetVersion() string {
 	return remote.Version
+}
+
+// GetVersion returns the Source & Version fields, concatenated with an '@'.
+func (remote Git) GetSourceVersion() string {
+	return fmt.Sprintf("%s@%s", remote.Source, remote.Version)
+}
+
+// GetVersion returns the Source & Version fields, as well as the passed
+// checksum, concatenated with '@'s.
+func (remote Git) GetSourceVersionSum(sum string) string {
+	return fmt.Sprintf("%s@%s@%s", remote.Source, remote.Version, sum)
 }
 
 func checkGitAvailable() error {

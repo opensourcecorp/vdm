@@ -2,37 +2,94 @@ package cache
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/opensourcecorp/vdm/internal/message"
+	"github.com/opensourcecorp/vdm/internal/vdmspec"
+	_ "modernc.org/sqlite"
 )
 
-// Caller's job to close file handle
-func GetOrCreateSumDBFile() (*os.File, error) {
-	homedir, err := os.UserHomeDir()
+var (
+	createStatement = "CREATE"
+	insertStatement = "INSERT"
+	dbStatements    = map[string]string{
+		createStatement: `
+			CREATE TABLE IF NOT EXISTS sums (
+				key TEXT PRIMARY KEY,
+				source TEXT,
+				version TEXT,
+				sum TEXT UNIQUE
+			);
+		`,
+		insertStatement: `
+			INSERT INTO sums (
+				key, source, version, sum
+			) VALUES (
+			 	?, ?, ?, ?
+			);
+		`,
+	}
+)
+
+func AddToSumDB(remote vdmspec.Remoter, reader io.Reader) (err error) {
+	sumDBPath, err := getSumDBPath()
 	if err != nil {
-		return nil, fmt.Errorf("determining user homedir: %w", err)
+		return fmt.Errorf("getting sumdb path %q: %w", sumDBPath, err)
 	}
 
-	sumDBPath := filepath.Join(homedir, ".vdm", "cache", "sumdb.json")
-	sumDBFile, err := os.OpenFile(sumDBPath, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)
+	db, err := sql.Open("sqlite", sumDBPath)
 	if err != nil {
-		return nil, fmt.Errorf("creating/opening sumdb file %q: %w", sumDBPath, err)
+		return fmt.Errorf("opening sumdb path %q: %w", sumDBPath, err)
+	}
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing sumdb file %q: %w", sumDBPath, closeErr))
+		}
+	}()
+
+	_, err = db.Exec(dbStatements[createStatement])
+	if err != nil {
+		return fmt.Errorf("creating sums table: %w", err)
 	}
 
-	return sumDBFile, err
+	sum, err := CalculateSHASum(reader)
+	if err != nil {
+		return fmt.Errorf("calculating SHA sum for remote source %q: %w", remote.GetSource(), err)
+	}
+	message.Debugf("sum calculated for remote %q's archive file was %q", remote.GetSource(), sum)
+
+	_, err = db.Exec(
+		dbStatements[insertStatement],
+		remote.GetSourceVersionSum(sum),
+		remote.GetSource(),
+		remote.GetVersion(),
+		sum,
+	)
+	if err != nil {
+		return fmt.Errorf("inserting into sums table: %w", err)
+	}
+
+	return err
 }
 
 // CalculateSHASum takes an arbitrary [io.Reader] (such as an open
 // file handle) and calculates the SHA256 checksum for it.
 func CalculateSHASum(reader io.Reader) (string, error) {
+	message.Debugf("reader address for calculating SHA sum: %v", reader)
 	hasher := sha256.New()
-	if _, err := io.Copy(hasher, reader); err != nil {
+	var n int64
+	var err error
+	if n, err = io.Copy(hasher, reader); err != nil {
 		return "", fmt.Errorf("writing reader to hasher: %w", err)
 	}
+	message.Debugf("number of bytes copied to hasher: %d", n)
 	sum := fmt.Sprintf("%x", hasher.Sum(nil))
 	return sum, nil
 }
@@ -56,6 +113,15 @@ func StringFromBase64(s string) (string, error) {
 		return "", fmt.Errorf("decoding base64 string %q: %w", s, err)
 	}
 	return string(out), nil
+}
+
+func getSumDBPath() (string, error) {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("determining user homedir: %w", err)
+	}
+	sumDBPath := filepath.Join(homedir, ".vdm", "cache", "sum.db")
+	return sumDBPath, nil
 }
 
 // base64NonAlphaMap maps non-alphanumeric base-64 characters to their arbitrary

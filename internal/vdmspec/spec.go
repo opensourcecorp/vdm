@@ -35,10 +35,17 @@ type Remoter interface {
 	// Sync should unpack the archive from the cache in VDM_HOME to the
 	// specified destination
 	Sync(src, dest string) error
-	// GetRemote returns the [RemoteTemplate.Source] value
+	// GetRemote should return the [RemoteTemplate.Source] value
 	GetSource() string
-	// GetRemote returns the [RemoteTemplate.Version] value
+	// GetRemote should return the [RemoteTemplate.Version] value
 	GetVersion() string
+	// GetRemoteVersion should concatenate the [RemoteTemplate.Source] and
+	// [RemoteTemplate.Version] values, separated by an '@' symbol
+	GetSourceVersion() string
+	// GetRemoteSourceVersionSum should concatenate the [RemoteTemplate.Source],
+	// [RemoteTemplate.Version], and computed checksum values, separated by '@'
+	// symbols
+	GetSourceVersionSum(sum string) string
 }
 
 // RemoteTemplate defines the template structure for each potential remote

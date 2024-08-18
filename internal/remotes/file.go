@@ -57,7 +57,7 @@ func (remote File) Sync(src, dest string) error {
 		return fmt.Errorf("creating parent directories for file %q: %w", dest, err)
 	}
 
-	err = archive.ExtractArchiveToDestination(src, dest)
+	err = archive.ExtractTGZArchive(src, dest)
 	if err != nil {
 		return fmt.Errorf("syncing file cache for remote %q: %w", remote.GetSource(), err)
 	}
@@ -72,6 +72,17 @@ func (remote File) GetSource() string {
 // GetVersion returns the Version field.
 func (remote File) GetVersion() string {
 	return remote.Version
+}
+
+// GetVersion returns the Source & Version fields, concatenated with an '@'.
+func (remote File) GetSourceVersion() string {
+	return fmt.Sprintf("%s@%s", remote.Source, remote.Version)
+}
+
+// GetVersion returns the Source & Version fields, as well as the passed
+// checksum, concatenated with '@'s.
+func (remote File) GetSourceVersionSum(sum string) string {
+	return fmt.Sprintf("%s@%s@%s", remote.Source, remote.Version, sum)
 }
 
 func checkFileExists(remote File) (bool, error) {

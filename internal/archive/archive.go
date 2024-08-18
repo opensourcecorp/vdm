@@ -9,10 +9,16 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/opensourcecorp/vdm/internal/filetree"
 	"github.com/opensourcecorp/vdm/internal/message"
+)
+
+var (
+	tgzRegex = regexp.MustCompile(`(\.tar\.gz|\.tgz)$`)
+	zipRegex = regexp.MustCompile(`\.zip$`)
 )
 
 // Much of the following functions taken from:
@@ -22,8 +28,8 @@ import (
 // from which to construct the archive, and its target file name. It returns an
 // open file handle to the archive, which should be closed by the caller.
 func CreateArchive(root string, archivePath string) (f *os.File, err error) {
-	if !strings.HasSuffix(archivePath, ".tar.gz") {
-		return nil, errors.New("provided archive path must end in .tar.gz")
+	if !tgzRegex.MatchString(archivePath) {
+		return nil, errors.New("provided archive path must have valid gzipped-tar extension")
 	}
 
 	rootAbs, err := filepath.Abs(root)
@@ -75,7 +81,11 @@ func CreateArchive(root string, archivePath string) (f *os.File, err error) {
 	return buf, err
 }
 
-func ExtractArchiveToDestination(src, dest string) error {
+func ExtractTGZArchive(src, dest string) error {
+	if !tgzRegex.MatchString(src) {
+		return errors.New("provided archive path must have valid gzipped-tar extension")
+	}
+
 	gzipFile, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("opening archive file: %w", err)

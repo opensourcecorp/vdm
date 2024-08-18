@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -21,41 +20,24 @@ func AddRemote(remote vdmspec.Remoter, cacheRoot string) (cachePath string, err 
 		return "", fmt.Errorf("creating vdm cache directory %q: %w", vars.GetVDMCacheDir(), err)
 	}
 
-	remoteWithVersion := fmt.Sprintf("%s@%s", remote.GetSource(), remote.GetVersion())
-	b64 := StringToBase64(remoteWithVersion)
+	b64 := StringToBase64(remote.GetSourceVersion())
 	if err != nil {
-		return "", fmt.Errorf("calculating sum when caching remote %q: %w", remoteWithVersion, err)
+		return "", fmt.Errorf("calculating sum when caching remote %q: %w", remote.GetSourceVersion(), err)
 	}
-	message.Debugf("remote %q base64'd to %q", remoteWithVersion, b64)
+	message.Debugf("remote %q base64'd to %q", remote.GetSourceVersion(), b64)
 
 	cacheFileName := b64 + ".tar.gz"
 	cacheTargetPath := filepath.Join(vars.GetVDMCacheDir(), cacheFileName)
 
 	cacheTarget, err := archive.CreateArchive(cacheRoot, cacheTargetPath)
 	if err != nil {
-		return "", fmt.Errorf("creating archive while adding remote %q: %w", remoteWithVersion, err)
+		return "", fmt.Errorf("creating archive while adding remote %q: %w", remote.GetSourceVersion(), err)
 	}
+	defer cacheTarget.Close()
 
-	sumDBFile, err := GetOrCreateSumDBFile()
+	err = AddToSumDB(remote, cacheTarget)
 	if err != nil {
-		return "", fmt.Errorf("creating/opening sumdb file %q: %w", sumDBFile.Name(), err)
-	}
-	defer func() {
-		if closeErr := sumDBFile.Close(); closeErr != nil {
-			err = errors.Join(err, fmt.Errorf("closing sumdb file %q: %w", sumDBFile.Name(), closeErr))
-		}
-	}()
-
-	sum, err := CalculateSHASum(cacheTarget)
-	if err != nil {
-		return "", fmt.Errorf("calculating checksum for writing: %w", err)
-	}
-	message.Debugf("sum calculated for path %q was %q", cacheTargetPath, sum)
-
-	sumDBContents := fmt.Sprintf("%s %s %s\n", remote.GetSource(), remote.GetVersion(), sum)
-	_, err = fmt.Fprint(sumDBFile, sumDBContents)
-	if err != nil {
-		return "", fmt.Errorf("writing to cache file %q: %w", cacheTargetPath, err)
+		return "", fmt.Errorf("adding %q details to sumdb: %w", cacheTargetPath, err)
 	}
 
 	return cacheTargetPath, err
