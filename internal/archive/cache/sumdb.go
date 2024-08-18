@@ -17,28 +17,33 @@ import (
 )
 
 var (
-	createStatement = "CREATE"
-	insertStatement = "INSERT"
-	dbStatements    = map[string]string{
-		createStatement: `
-			CREATE TABLE IF NOT EXISTS sums (
-				key TEXT PRIMARY KEY,
+	tableName               = "sums"
+	createStatement         = "CREATE"
+	insertStatement         = "INSERT"
+	checkKeyExistsStatement = "CHECK_EXISTS"
+	dbStatements            = map[string]string{
+		createStatement: fmt.Sprintf(`
+			CREATE TABLE IF NOT EXISTS %s (
+				key TEXT UNIQUE PRIMARY KEY,
 				source TEXT,
 				version TEXT,
 				sum TEXT UNIQUE
 			);
-		`,
-		insertStatement: `
-			INSERT INTO sums (
+		`, tableName),
+		insertStatement: fmt.Sprintf(`
+			INSERT INTO %s (
 				key, source, version, sum
 			) VALUES (
 			 	?, ?, ?, ?
 			);
-		`,
+		`, tableName),
+		checkKeyExistsStatement: fmt.Sprintf(`
+			SELECT COUNT(*) FROM %s
+		`, tableName),
 	}
 )
 
-func AddToSumDB(remote vdmspec.Remoter, reader io.Reader) (err error) {
+func CreateSumDB() (err error) {
 	sumDBPath, err := getSumDBPath()
 	if err != nil {
 		return fmt.Errorf("getting sumdb path %q: %w", sumDBPath, err)
@@ -59,7 +64,36 @@ func AddToSumDB(remote vdmspec.Remoter, reader io.Reader) (err error) {
 		return fmt.Errorf("creating sums table: %w", err)
 	}
 
-	sum, err := CalculateSHASum(reader)
+	return err
+}
+
+func AddToSumDB(remote vdmspec.Remoter, cacheTargetPath string) (err error) {
+	sumDBPath, err := getSumDBPath()
+	if err != nil {
+		return fmt.Errorf("getting sumdb path %q: %w", sumDBPath, err)
+	}
+
+	db, err := sql.Open("sqlite", sumDBPath)
+	if err != nil {
+		return fmt.Errorf("opening sumdb path %q: %w", sumDBPath, err)
+	}
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing sumdb file %q: %w", sumDBPath, closeErr))
+		}
+	}()
+
+	f, err := os.Open(cacheTargetPath)
+	if err != nil {
+		return fmt.Errorf("opening cache target path %q for hashing: %w", cacheTargetPath, err)
+	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing cache target file %q: %w", cacheTargetPath, closeErr))
+		}
+	}()
+
+	sum, err := calculateSHASum(f)
 	if err != nil {
 		return fmt.Errorf("calculating SHA sum for remote source %q: %w", remote.GetSource(), err)
 	}
@@ -67,7 +101,7 @@ func AddToSumDB(remote vdmspec.Remoter, reader io.Reader) (err error) {
 
 	_, err = db.Exec(
 		dbStatements[insertStatement],
-		remote.GetSourceVersionSum(sum),
+		remote.GetSourceVersion(),
 		remote.GetSource(),
 		remote.GetVersion(),
 		sum,
@@ -79,9 +113,41 @@ func AddToSumDB(remote vdmspec.Remoter, reader io.Reader) (err error) {
 	return err
 }
 
-// CalculateSHASum takes an arbitrary [io.Reader] (such as an open
+func CheckIfRemoteInSumDB(remote vdmspec.Remoter) (hasKey bool, err error) {
+	sumDBPath, err := getSumDBPath()
+	if err != nil {
+		return false, fmt.Errorf("getting sumdb path %q: %w", sumDBPath, err)
+	}
+
+	db, err := sql.Open("sqlite", sumDBPath)
+	if err != nil {
+		return false, fmt.Errorf("opening sumdb path %q: %w", sumDBPath, err)
+	}
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing sumdb file %q: %w", sumDBPath, closeErr))
+		}
+	}()
+
+	var numRows int
+	err = db.QueryRow(dbStatements[checkKeyExistsStatement]).Scan(&numRows)
+	if err != nil {
+		return false, fmt.Errorf("querying sumdb: %w", err)
+	}
+	message.Debugf("number of results from sumdb for remote key %q: %d", remote.GetSourceVersion(), numRows)
+
+	message.Debugf("sumdb query result not yet checked for remote key %q, hasKey: %v", remote.GetSourceVersion(), hasKey)
+	if numRows > 0 {
+		hasKey = true
+	}
+	message.Debugf("sumdb query result now checked for remote key %q, hasKey: %v", remote.GetSourceVersion(), hasKey)
+
+	return hasKey, err
+}
+
+// calculateSHASum takes an arbitrary [io.Reader] (such as an open
 // file handle) and calculates the SHA256 checksum for it.
-func CalculateSHASum(reader io.Reader) (string, error) {
+func calculateSHASum(reader io.Reader) (string, error) {
 	message.Debugf("reader address for calculating SHA sum: %v", reader)
 	hasher := sha256.New()
 	var n int64

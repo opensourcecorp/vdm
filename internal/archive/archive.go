@@ -27,27 +27,31 @@ var (
 // CreateArchive writes a gzipped tarball based on the provided root directory
 // from which to construct the archive, and its target file name. It returns an
 // open file handle to the archive, which should be closed by the caller.
-func CreateArchive(root string, archivePath string) (f *os.File, err error) {
+func CreateArchive(root string, archivePath string) (err error) {
 	if !tgzRegex.MatchString(archivePath) {
-		return nil, errors.New("provided archive path must have valid gzipped-tar extension")
+		return errors.New("provided archive path must have valid gzipped-tar extension")
 	}
 
 	rootAbs, err := filepath.Abs(root)
 	if err != nil {
-		return nil, fmt.Errorf("determining abspath of provided root dir %q: %w", root, err)
+		return fmt.Errorf("determining abspath of provided root dir %q: %w", root, err)
 	}
 	message.Debugf("root: %q, rootAbs: %q", root, rootAbs)
 
 	archivePathAbs, err := filepath.Abs(archivePath)
 	if err != nil {
-		return nil, fmt.Errorf("determining abspath of provided archive path %q: %w", archivePath, err)
+		return fmt.Errorf("determining abspath of provided archive path %q: %w", archivePath, err)
 	}
 
 	buf, err := os.Create(archivePathAbs)
 	if err != nil {
-		return nil, fmt.Errorf("opening target archive path: %w", err)
+		return fmt.Errorf("opening target archive path %q: %w", archivePathAbs, err)
 	}
-	// NOTE: file not closed because it's returned, open, to the caller
+	defer func() {
+		if closeErr := buf.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing archive file buffer from %q: %w", archivePathAbs, closeErr))
+		}
+	}()
 
 	// gzip and tar get their own writers, and note that they are chained -- tar
 	// writes to gzip, which writes to the buffer. So, we only need to write to
@@ -68,17 +72,17 @@ func CreateArchive(root string, archivePath string) (f *os.File, err error) {
 
 	files, err := filetree.GetFilePathsInDirectory(rootAbs)
 	if err != nil {
-		return nil, fmt.Errorf("populating list of files from %q: %w", root, err)
+		return fmt.Errorf("populating list of files from %q: %w", root, err)
 	}
 
 	for _, fileName := range files {
 		err := addToArchive(tarWriter, rootAbs, fileName)
 		if err != nil {
-			return nil, fmt.Errorf("adding %q to archive: %w", fileName, err)
+			return fmt.Errorf("adding %q to archive: %w", fileName, err)
 		}
 	}
 
-	return buf, err
+	return err
 }
 
 func ExtractTGZArchive(src, dest string) error {

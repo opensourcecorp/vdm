@@ -15,32 +15,31 @@ import (
 // AddRemote uses the provided [vdmspec.Remoter] information along with a file
 // handle for a target archive to actually write the archive data. TODO fix this
 func AddRemote(remote vdmspec.Remoter, cacheRoot string) (cachePath string, err error) {
-	err = os.MkdirAll(vars.GetVDMCacheDir(), 0755)
-	if err != nil {
-		return "", fmt.Errorf("creating vdm cache directory %q: %w", vars.GetVDMCacheDir(), err)
-	}
-
 	b64 := StringToBase64(remote.GetSourceVersion())
-	if err != nil {
-		return "", fmt.Errorf("calculating sum when caching remote %q: %w", remote.GetSourceVersion(), err)
-	}
 	message.Debugf("remote %q base64'd to %q", remote.GetSourceVersion(), b64)
 
 	cacheFileName := b64 + ".tar.gz"
 	cacheTargetPath := filepath.Join(vars.GetVDMCacheDir(), cacheFileName)
 
-	cacheTarget, err := archive.CreateArchive(cacheRoot, cacheTargetPath)
+	remoteAlreadyInSumDB, err := CheckIfRemoteInSumDB(remote)
 	if err != nil {
-		return "", fmt.Errorf("creating archive while adding remote %q: %w", remote.GetSourceVersion(), err)
-	}
-	defer cacheTarget.Close()
-
-	err = AddToSumDB(remote, cacheTarget)
-	if err != nil {
-		return "", fmt.Errorf("adding %q details to sumdb: %w", cacheTargetPath, err)
+		return "", fmt.Errorf("checking if remote %q already in sumdb: %w", remote.GetSourceVersion(), err)
 	}
 
-	return cacheTargetPath, err
+	if !remoteAlreadyInSumDB {
+		message.Infof("Remote %q already found in local cache, will retrieve from there")
+		err = archive.CreateArchive(cacheRoot, cacheTargetPath)
+		if err != nil {
+			return "", fmt.Errorf("creating archive while adding remote %q: %w", remote.GetSourceVersion(), err)
+		}
+
+		err = AddToSumDB(remote, cacheTargetPath)
+		if err != nil {
+			return "", fmt.Errorf("adding %q details to sumdb: %w", cacheTargetPath, err)
+		}
+	}
+
+	return cacheTargetPath, nil
 }
 
 func GetTempCachePath(remote vdmspec.Remoter) string {

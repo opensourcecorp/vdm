@@ -3,7 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 
+	"github.com/opensourcecorp/vdm/cmd/vars"
+	"github.com/opensourcecorp/vdm/internal/archive/cache"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -65,6 +68,16 @@ func executeRootCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return errors.New("failed to print help message, somehow")
 		}
+	}
+
+	err := os.MkdirAll(vars.GetVDMCacheDir(), 0755)
+	if err != nil {
+		return fmt.Errorf("creating vdm cache directory %q: %w", vars.GetVDMCacheDir(), err)
+	}
+
+	err = cache.CreateSumDB()
+	if err != nil {
+		return fmt.Errorf("creating sumdb before any vdm operations: %w", err)
 	}
 
 	return errors.New("You must provide a subcommand to vdm")
