@@ -32,9 +32,6 @@ func (spec Spec) Validate() error {
 		if remote.Type == GitType && remote.Version == "" {
 			allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length"))
 		}
-		if remote.Type == FileType && remote.Version != "" {
-			message.Warnf("NOTE: Remote #%d %q specified as type %q, which does not take explicit version info (you provided %q); ignoring version field", remoteIndex, remote.Source, remote.Type, remote.Version)
-		}
 
 		// Destination field
 		message.Debugf("Index #%d: validating field 'Destination' for %+v", remoteIndex, remote)
@@ -46,10 +43,6 @@ func (spec Spec) Validate() error {
 		message.Debugf("Index #%d: validating field 'Type' for %+v", remoteIndex, remote)
 		if remote.Type == "" {
 			allErrors = append(allErrors, errors.New("all remotes must specify a 'type' field"))
-		}
-		typeMap := map[string]int{
-			GitType:  1,
-			FileType: 2,
 		}
 		if _, ok := typeMap[remote.Type]; !ok {
 			allErrors = append(allErrors, fmt.Errorf("unrecognized remote type %q", remote.Type))

@@ -13,33 +13,39 @@ import (
 )
 
 // AddRemote uses the provided [vdmspec.Remoter] information along with a file
-// handle for a target archive to actually write the archive data. TODO fix this
-func AddRemote(remote vdmspec.Remoter, cacheRoot string) (cachePath string, err error) {
-	b64 := StringToBase64(remote.GetSourceVersion())
-	message.Debugf("remote %q base64'd to %q", remote.GetSourceVersion(), b64)
+// handle for a target archive to actually write the archive data.
+func AddRemote(remote vdmspec.Remoter, cacheRoot string) (string, error) {
+	cachePath, err := GetPersistentCacheFilePath(remote)
+	if err != nil {
+		return "", fmt.Errorf("getting cache location for remote %q: %w", remote.GetSumDBKey(), err)
+	}
+
+	err = archive.CreateArchive(cacheRoot, cachePath)
+	if err != nil {
+		return "", fmt.Errorf("creating archive while adding remote %q: %w", remote.GetSumDBKey(), err)
+	}
+
+	err = AddToSumDB(remote, cachePath)
+	if err != nil {
+		return "", fmt.Errorf("adding %q details to sumdb: %w", cachePath, err)
+	}
+
+	return cachePath, nil
+}
+
+func GetPersistentCacheFilePath(remote vdmspec.Remoter) (string, error) {
+	b64 := StringToBase64(remote.GetSumDBKey())
+	message.Debugf("remote %q base64'd to %q", remote.GetSumDBKey(), b64)
 
 	cacheFileName := b64 + ".tar.gz"
-	cacheTargetPath := filepath.Join(vars.GetVDMCacheDir(), cacheFileName)
 
-	remoteAlreadyInSumDB, err := CheckIfRemoteInSumDB(remote)
+	vdmCacheDir, err := vars.GetVDMCacheDir()
 	if err != nil {
-		return "", fmt.Errorf("checking if remote %q already in sumdb: %w", remote.GetSourceVersion(), err)
+		return "", fmt.Errorf("determining vdm cache directory while adding remote: %w", err)
 	}
 
-	if !remoteAlreadyInSumDB {
-		message.Infof("Remote %q already found in local cache, will retrieve from there")
-		err = archive.CreateArchive(cacheRoot, cacheTargetPath)
-		if err != nil {
-			return "", fmt.Errorf("creating archive while adding remote %q: %w", remote.GetSourceVersion(), err)
-		}
-
-		err = AddToSumDB(remote, cacheTargetPath)
-		if err != nil {
-			return "", fmt.Errorf("adding %q details to sumdb: %w", cacheTargetPath, err)
-		}
-	}
-
-	return cacheTargetPath, nil
+	cachePath := filepath.Join(vdmCacheDir, cacheFileName)
+	return cachePath, nil
 }
 
 func GetTempCachePath(remote vdmspec.Remoter) string {

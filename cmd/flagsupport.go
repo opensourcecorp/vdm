@@ -18,14 +18,3 @@ func maybeSetDebug() {
 		}
 	}
 }
-
-// maybeTryLocalSources sets the TRY_LOCAL_SOURCES environment variable if it
-// was set as a flag by the caller.
-func maybeTryLocalSources() {
-	if viper.GetBool(tryLocalSourcesFlagKey) {
-		err := os.Setenv(vars.TryLocalSources, "true")
-		if err != nil {
-			message.Fatalf("internal error: unable to set environment variable %s", vars.TryLocalSources)
-		}
-	}
-}

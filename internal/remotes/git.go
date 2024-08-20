@@ -29,34 +29,47 @@ func (remote Git) Cache() (cachePath string, err error) {
 		}
 	}()
 
-	remote.OpMsg("Retrieving...")
-	err = gitClone(remote.Source, tmpCachePath)
+	remoteAlreadyInSumDB, err := cache.CheckIfRemoteInSumDB(remote)
 	if err != nil {
-		return "", fmt.Errorf("cloning git repository: %w", err)
+		return "", fmt.Errorf("checking if remote %q already in sumdb: %w", remote.GetSumDBKey(), err)
 	}
-	defer func() {
-		if rmErr := os.RemoveAll(tmpCachePath); rmErr != nil {
-			err = errors.Join(err, fmt.Errorf("removing temporary cache directory for %q: %w", remote.GetSource(), rmErr))
+
+	if !remoteAlreadyInSumDB {
+		remote.OpMsg("Retrieving...")
+		err = gitClone(remote.Source, tmpCachePath)
+		if err != nil {
+			return "", fmt.Errorf("cloning git repository: %w", err)
 		}
-	}()
+		defer func() {
+			if rmErr := os.RemoveAll(tmpCachePath); rmErr != nil {
+				err = errors.Join(err, fmt.Errorf("removing temporary cache directory for %q: %w", remote.GetSource(), rmErr))
+			}
+		}()
 
-	remote.OpMsg("Setting specified version...")
-	checkoutCmd := exec.Command("git", "-C", tmpCachePath, "checkout", remote.Version)
-	checkoutOutput, err := checkoutCmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
-	}
+		remote.OpMsg("Setting specified version...")
+		checkoutCmd := exec.Command("git", "-C", tmpCachePath, "checkout", remote.Version)
+		checkoutOutput, err := checkoutCmd.CombinedOutput()
+		if err != nil {
+			return "", fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
+		}
 
-	message.Debugf("removing .git dir for local path %q", tmpCachePath)
-	dotGitPath := filepath.Join(tmpCachePath, ".git")
-	err = os.RemoveAll(dotGitPath)
-	if err != nil {
-		return "", fmt.Errorf("removing directory %q: %w", dotGitPath, err)
-	}
+		message.Debugf("removing .git dir for local path %q", tmpCachePath)
+		dotGitPath := filepath.Join(tmpCachePath, ".git")
+		err = os.RemoveAll(dotGitPath)
+		if err != nil {
+			return "", fmt.Errorf("removing directory %q: %w", dotGitPath, err)
+		}
 
-	cachePath, err = cache.AddRemote(remote, tmpCachePath)
-	if err != nil {
-		return "", fmt.Errorf("caching git remote %q: %w", remote.Source, err)
+		cachePath, err = cache.AddRemote(remote, tmpCachePath)
+		if err != nil {
+			return "", fmt.Errorf("caching git remote %q: %w", remote.Source, err)
+		}
+	} else {
+		remote.OpMsg("Remote found in local cache; restoring...")
+		cachePath, err = cache.GetPersistentCacheFilePath(remote)
+		if err != nil {
+			return "", fmt.Errorf("getting existing cache path for remote %q: %w", remote.GetSumDBKey(), err)
+		}
 	}
 
 	return cachePath, err
@@ -81,15 +94,9 @@ func (remote Git) GetVersion() string {
 	return remote.Version
 }
 
-// GetVersion returns the Source & Version fields, concatenated with an '@'.
-func (remote Git) GetSourceVersion() string {
+// GetSumDBKey returns the Source & Version fields, concatenated with an '@'.
+func (remote Git) GetSumDBKey() string {
 	return fmt.Sprintf("%s@%s", remote.Source, remote.Version)
-}
-
-// GetVersion returns the Source & Version fields, as well as the passed
-// checksum, concatenated with '@'s.
-func (remote Git) GetSourceVersionSum(sum string) string {
-	return fmt.Sprintf("%s@%s@%s", remote.Source, remote.Version, sum)
 }
 
 func checkGitAvailable() error {

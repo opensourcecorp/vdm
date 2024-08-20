@@ -8,6 +8,7 @@ import (
 	"github.com/opensourcecorp/vdm/cmd/vars"
 	"github.com/opensourcecorp/vdm/internal/archive/cache"
 	"github.com/opensourcecorp/vdm/internal/message"
+	"github.com/opensourcecorp/vdm/internal/vdminit"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -70,9 +71,19 @@ func executeRootCommand(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	err := os.MkdirAll(vars.GetVDMCacheDir(), 0755)
+	err := vdminit.Paths()
 	if err != nil {
-		return fmt.Errorf("creating vdm cache directory %q: %w", vars.GetVDMCacheDir(), err)
+		return fmt.Errorf("initializing vdm: %w", err)
+	}
+
+	vdmCacheDir, err := vars.GetVDMCacheDir()
+	if err != nil {
+		return fmt.Errorf("determining vdm cache directory while running root command: %w", err)
+	}
+
+	err = os.MkdirAll(vdmCacheDir, 0755)
+	if err != nil {
+		return fmt.Errorf("creating vdm cache directory %q: %w", vdmCacheDir, err)
 	}
 
 	err = cache.CreateSumDB()

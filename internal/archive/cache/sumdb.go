@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opensourcecorp/vdm/cmd/vars"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 	_ "modernc.org/sqlite"
@@ -38,7 +39,10 @@ var (
 			);
 		`, tableName),
 		checkKeyExistsStatement: fmt.Sprintf(`
-			SELECT COUNT(*) FROM %s
+			SELECT COUNT(*)
+			FROM %s
+			WHERE key = ?
+			;
 		`, tableName),
 	}
 )
@@ -101,7 +105,7 @@ func AddToSumDB(remote vdmspec.Remoter, cacheTargetPath string) (err error) {
 
 	_, err = db.Exec(
 		dbStatements[insertStatement],
-		remote.GetSourceVersion(),
+		remote.GetSumDBKey(),
 		remote.GetSource(),
 		remote.GetVersion(),
 		sum,
@@ -130,17 +134,17 @@ func CheckIfRemoteInSumDB(remote vdmspec.Remoter) (hasKey bool, err error) {
 	}()
 
 	var numRows int
-	err = db.QueryRow(dbStatements[checkKeyExistsStatement]).Scan(&numRows)
+	err = db.QueryRow(dbStatements[checkKeyExistsStatement], remote.GetSumDBKey()).Scan(&numRows)
 	if err != nil {
 		return false, fmt.Errorf("querying sumdb: %w", err)
 	}
-	message.Debugf("number of results from sumdb for remote key %q: %d", remote.GetSourceVersion(), numRows)
+	message.Debugf("number of results from sumdb for remote key %q: %d", remote.GetSumDBKey(), numRows)
 
-	message.Debugf("sumdb query result not yet checked for remote key %q, hasKey: %v", remote.GetSourceVersion(), hasKey)
+	message.Debugf("sumdb query result not yet checked for remote key %q, hasKey: %v", remote.GetSumDBKey(), hasKey)
 	if numRows > 0 {
 		hasKey = true
 	}
-	message.Debugf("sumdb query result now checked for remote key %q, hasKey: %v", remote.GetSourceVersion(), hasKey)
+	message.Debugf("sumdb query result now checked for remote key %q, hasKey: %v", remote.GetSumDBKey(), hasKey)
 
 	return hasKey, err
 }
@@ -182,11 +186,15 @@ func StringFromBase64(s string) (string, error) {
 }
 
 func getSumDBPath() (string, error) {
-	homedir, err := os.UserHomeDir()
+	vdmCachePath, err := vars.GetVDMCacheDir()
 	if err != nil {
-		return "", fmt.Errorf("determining user homedir: %w", err)
+		return "", fmt.Errorf("determining vdm cache path during sumdb creation: %w", err)
 	}
-	sumDBPath := filepath.Join(homedir, ".vdm", "cache", "sum.db")
+
+	message.Debugf("vdm cache directory during sumdb path determination was %q", vdmCachePath)
+	sumDBPath := filepath.Join(vdmCachePath, "sum.db")
+	message.Debugf("sumdb path to be used: %q", sumDBPath)
+
 	return sumDBPath, nil
 }
 

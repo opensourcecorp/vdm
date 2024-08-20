@@ -1,10 +1,8 @@
 package vdmspec
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/opensourcecorp/vdm/internal/message"
@@ -12,15 +10,23 @@ import (
 )
 
 const (
-	// MetaFileName is the name of the tracking file that vdm uses to record &
-	// track remote statuses on disk.
-	MetaFileName string = "VDMMETA"
-
-	// GitType represents the string to match against for git remote types.
+	// GitType represents the string to match against for "git" remote types.
 	GitType string = "git"
-	// FileType represents the string to match against for file remote types.
-	FileType string = "file"
+	// ArchiveType represents the string to match against for "archive" remote
+	// types.
+	ArchiveType string = "archive"
+	// LocalType represents the string to match against for "local" "remote"
+	// types.
+	LocalType string = "local"
 )
+
+// typeMap is used to house more programmatic access to the various remote
+// types, such as in tests or [Spec.Validate]
+var typeMap = map[string]int{
+	GitType:     0,
+	ArchiveType: 1,
+	LocalType:   2,
+}
 
 // Spec defines the overall structure of the vmd specfile.
 type Spec struct {
@@ -39,13 +45,10 @@ type Remoter interface {
 	GetSource() string
 	// GetRemote should return the [RemoteTemplate.Version] value
 	GetVersion() string
-	// GetRemoteVersion should concatenate the [RemoteTemplate.Source] and
-	// [RemoteTemplate.Version] values, separated by an '@' symbol
-	GetSourceVersion() string
-	// GetRemoteSourceVersionSum should concatenate the [RemoteTemplate.Source],
-	// [RemoteTemplate.Version], and computed checksum values, separated by '@'
-	// symbols
-	GetSourceVersionSum(sum string) string
+	// GetSumDBKey should concatenate the relevant values from the
+	// [RemoteTemplate] to produce a string value satisfying the primary key
+	// constraint for the sumdb
+	GetSumDBKey() string
 }
 
 // RemoteTemplate defines the template structure for each potential remote
@@ -73,70 +76,6 @@ type RemoteTemplate struct {
 	// to copy over that version of the Remote and not keep pushing-and-pulling
 	// to a Git upstream just to test the changes.
 	TryLocalSource string `json:"try_local_source" yaml:"try_local_source"`
-}
-
-// MakeMetaFilePath constructs the metafile path that vdm will use to track a
-// remote's state on disk.
-func (r RemoteTemplate) MakeMetaFilePath() string {
-	metaFilePath := filepath.Join(r.Destination, MetaFileName)
-	// TODO: this is brittle, but it's the best I can think of right now
-	if r.Type == FileType {
-		fileDir := filepath.Dir(r.Destination)
-		fileName := filepath.Base(r.Destination)
-		// converts to e.g. 'VDMMETA_http.proto'
-		metaFilePath = filepath.Join(fileDir, fmt.Sprintf("%s_%s", MetaFileName, fileName))
-	}
-
-	return metaFilePath
-}
-
-// WriteVDMMeta writes the metafile contents to disk, the path of which is
-// determined by [RemoteTemplate.MakeMetaFilePath].
-func (r RemoteTemplate) WriteVDMMeta() error {
-	metaFilePath := r.MakeMetaFilePath()
-	vdmMetaContent, err := yaml.Marshal(r)
-	if err != nil {
-		return fmt.Errorf("writing %q: %w", metaFilePath, err)
-	}
-
-	vdmMetaContent = append(vdmMetaContent, []byte("\n")...)
-
-	message.Debugf("writing metadata file to %q", metaFilePath)
-	err = os.WriteFile(metaFilePath, vdmMetaContent, 0644)
-	if err != nil {
-		return fmt.Errorf("writing metadata file: %w", err)
-	}
-
-	return nil
-}
-
-// GetVDMMeta reads the metafile from disk, and returns it for further
-// processing.
-func (r RemoteTemplate) GetVDMMeta() (RemoteTemplate, error) {
-	metaFilePath := r.MakeMetaFilePath()
-	_, err := os.Stat(metaFilePath)
-	if errors.Is(err, os.ErrNotExist) {
-		return RemoteTemplate{}, nil // this is ok, because it might literally not exist yet
-	} else if err != nil {
-		return RemoteTemplate{}, fmt.Errorf("couldn't check if %q exists at %q: %w", MetaFileName, metaFilePath, err)
-	}
-
-	vdmMetaFile, err := os.ReadFile(metaFilePath)
-	if err != nil {
-		message.Debugf("error reading VMDMMETA from disk: %w", err)
-		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the %s file from %q: %w", MetaFileName, metaFilePath, err)
-	}
-	message.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
-
-	var vdmMeta RemoteTemplate
-	err = yaml.Unmarshal(vdmMetaFile, &vdmMeta)
-	if err != nil {
-		message.Debugf("error during %s unmarshal: w", MetaFileName, err)
-		return RemoteTemplate{}, fmt.Errorf("there was a problem reading the contents of the %s file at %q: %w", MetaFileName, metaFilePath, err)
-	}
-	message.Debugf("file %q unmarshalled: %+v", MetaFileName, vdmMeta)
-
-	return vdmMeta, nil
 }
 
 // GetSpecFromFile reads the specfile from disk (the path of which may be

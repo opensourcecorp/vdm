@@ -34,13 +34,4 @@ func TestMaybeGetTopLevelDir(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, wantTopLevelDir, gotTopLevelDir)
 	})
-
-	t.Run("works when rootDir is a file", func(t *testing.T) {
-		rootDir := "../../testdata/filetree/top-file"
-		wantTopLevelDir := ""
-		gotTopLevelDir, err := maybeGetTopLevelDir(rootDir)
-
-		assert.NoError(t, err)
-		assert.Equal(t, wantTopLevelDir, gotTopLevelDir)
-	})
 }

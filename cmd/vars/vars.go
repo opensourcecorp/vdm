@@ -4,6 +4,7 @@
 package vars
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -17,30 +18,29 @@ const (
 	VDMHomeEnvVarName = "VDM_HOME"
 )
 
-var (
-	// VDMHome stores the location of vdm's own home directory
-	VDMHome string
-)
-
-func init() {
+func GetVDMHomeDir() (string, error) {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
-		panic("unable to determine home directory")
+		return "", fmt.Errorf("determining home directory: %w", err)
 	}
 
+	var vdmHome string
 	vdmHomeOverride, ok := os.LookupEnv(VDMHomeEnvVarName)
 	if ok {
-		VDMHome = filepath.Join(vdmHomeOverride, ".vdm")
+		vdmHome = filepath.Join(vdmHomeOverride, ".vdm")
 	} else {
-		VDMHome = filepath.Join(homedir, ".vdm")
+		vdmHome = filepath.Join(homedir, ".vdm")
 	}
-	err = os.Setenv(VDMHomeEnvVarName, VDMHome)
-	if err != nil {
-		panic("unable to set VDM home directory")
-	}
+
+	return vdmHome, nil
 }
 
 // GetVDMCacheDir returns the determined path to vdm's cache directory.
-func GetVDMCacheDir() string {
-	return filepath.Join(os.Getenv(VDMHomeEnvVarName), "cache")
+func GetVDMCacheDir() (string, error) {
+	vdmHome, err := GetVDMHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("getting vdm home directory: %w", err)
+	}
+
+	return filepath.Join(vdmHome, "cache"), nil
 }
