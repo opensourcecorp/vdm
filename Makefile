@@ -44,6 +44,9 @@ clean:
 		./dist/debian/vdm.deb \
 		*.out
 	@sudo rm -rf ./dist/debian/vdm/usr
+# TODO: until I (maybe) sort out the tests to write test data consistently,
+# these deps/ directories etc. can kind of show up anywhere
+	@find . -type d -name '*deps*' -exec rm -rf {} +
 
 bump-versions: clean
 	@bash ./scripts/bump-versions.sh "$${old_version:-}"

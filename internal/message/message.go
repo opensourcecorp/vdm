@@ -1,4 +1,4 @@
-// Package message controls message printing. THis isn't a "logging" package per
+// Package message controls message printing. This isn't a "logging" package per
 // se, but adds some niceties for log-like needs.
 package message
 

@@ -14,6 +14,8 @@ import (
 	"github.com/opensourcecorp/vdm/cmd/vars"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
+
+	// Imports the SQLite driver
 	_ "modernc.org/sqlite"
 )
 
@@ -140,11 +142,10 @@ func CheckIfRemoteInSumDB(remote vdmspec.Remoter) (hasKey bool, err error) {
 	}
 	message.Debugf("number of results from sumdb for remote key %q: %d", remote.GetSumDBKey(), numRows)
 
-	message.Debugf("sumdb query result not yet checked for remote key %q, hasKey: %v", remote.GetSumDBKey(), hasKey)
 	if numRows > 0 {
 		hasKey = true
 	}
-	message.Debugf("sumdb query result now checked for remote key %q, hasKey: %v", remote.GetSumDBKey(), hasKey)
+	message.Debugf("sumdb query result checked for remote key %q, hasKey: %v", remote.GetSumDBKey(), hasKey)
 
 	return hasKey, err
 }

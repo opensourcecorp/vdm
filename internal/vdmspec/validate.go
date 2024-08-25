@@ -53,7 +53,7 @@ func (spec Spec) Validate() error {
 		for _, err := range allErrors {
 			message.Errorf("validation failure: %s", err.Error())
 		}
-		return fmt.Errorf("%d validation failure(s) found in your vdm spec file", len(allErrors))
+		return fmt.Errorf("%d validation failure(s) found in your vdm specfile", len(allErrors))
 	}
 	return nil
 }

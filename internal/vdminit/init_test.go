@@ -14,7 +14,6 @@ import (
 func TestPaths(t *testing.T) {
 	// SetupVDMForTest itself calls Paths(), handily
 	_, cleanup := SetupVDMForTest(t)
-
 	t.Cleanup(cleanup)
 
 	t.Run("env var is set right", func(t *testing.T) {

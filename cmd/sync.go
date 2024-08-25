@@ -12,15 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// syncFlags defines the CLI flags for the sync subcommand.
-type syncFlags struct {
-	TryLocalSources bool
-}
-
-// syncFlagValues contains an initalized [syncFlags] struct with populated
-// values.
-var syncFlagValues syncFlags
-
 func newSyncCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync",
@@ -51,18 +42,18 @@ func executeSyncSubCommand(_ *cobra.Command, _ []string) error {
 func sync() error {
 	spec, err := vdmspec.GetSpecFromFile(rootFlagValues.SpecFilePath)
 	if err != nil {
-		return fmt.Errorf("getting specs from spec file: %w", err)
+		return fmt.Errorf("getting specs from specfile: %w", err)
 	}
 
 	err = spec.Validate()
 	if err != nil {
-		return fmt.Errorf("your vdm spec file is malformed: %w", err)
+		return fmt.Errorf("your vdm specfile is malformed: %w", err)
 	}
 
 	for _, remote := range spec.Remotes {
 		var determinedRemote vdmspec.Remoter
 		switch remote.Type {
-		case vdmspec.GitType, "":
+		case vdmspec.GitType:
 			determinedRemote = remotes.Git{RemoteTemplate: remote}
 		case vdmspec.ArchiveType:
 			return errors.New("cannot process 'archive' remote types, as they are not yet fully implemented")

@@ -1,8 +1,11 @@
 package vdmspec
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/opensourcecorp/vdm/internal/message"
@@ -88,7 +91,7 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 		return Spec{}, fmt.Errorf(
 			strings.Join([]string{
 				"there was a problem reading your vdm file from %q -- does it not exist?",
-				"Either pass the --spec-file flag, or create one in the default location (details in the README).",
+				"Either pass the --specfile flag, or create one in the default location (details in the README).",
 				"Error details: %w"},
 				" ",
 			),
@@ -99,10 +102,23 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 	message.Debugf("specfile contents read:\n%s", string(specFile))
 
 	var spec Spec
-	err = yaml.Unmarshal(specFile, &spec)
+	specfileExtension := filepath.Ext(specFilePath)
+	switch specfileExtension {
+	case ".yaml", ".yml":
+		message.Debugf("specfile format is YAML")
+		err = yaml.Unmarshal(specFile, &spec)
+	case ".json":
+		message.Debugf("specfile format is JSON")
+		err = json.Unmarshal(specFile, &spec)
+	case ".toml":
+		message.Debugf("specfile format is TOML")
+		err = errors.New("TOML format for vdm specfile is not yet supported")
+	default:
+		err = fmt.Errorf("unsupported specfile extension %q", specfileExtension)
+	}
 	if err != nil {
-		message.Debugf("error during specfile unmarshal: w", err)
-		return Spec{}, fmt.Errorf("there was a problem reading the contents of your vdm spec file: %w", err)
+		message.Debugf("error during specfile %s unmarshal: %v", specfileExtension, err)
+		return Spec{}, fmt.Errorf("there was a problem reading the contents of your vdm specfile %q: %w", specFilePath, err)
 	}
 	message.Debugf("vdmSpecs unmarshalled: %+v", spec)
 

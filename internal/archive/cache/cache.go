@@ -19,6 +19,7 @@ func AddRemote(remote vdmspec.Remoter, cacheRoot string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("getting cache location for remote %q: %w", remote.GetSumDBKey(), err)
 	}
+	message.Debugf("persistent cache file path: %q", cachePath)
 
 	err = archive.CreateArchive(cacheRoot, cachePath)
 	if err != nil {

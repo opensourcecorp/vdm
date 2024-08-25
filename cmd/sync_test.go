@@ -17,16 +17,15 @@ var (
 )
 
 func TestSync(t *testing.T) {
-	_, cleanup := vdminit.SetupVDMForTest(t)
-
 	// This runs as part of the outer test container, because we want to inspect
 	// the filesystem state as we go
+	_, cleanup := vdminit.SetupVDMForTest(t)
 	t.Cleanup(cleanup)
 
 	cmd := newRootCommand()
 	cmd.SetArgs([]string{
 		"--debug",
-		"--specfile-path", testSpecFilePath,
+		"--specfile", testSpecFilePath,
 		"sync",
 	})
 
@@ -44,9 +43,9 @@ func TestSync(t *testing.T) {
 		for topDir, secondDir := range expectedGitDirs {
 			sourceRoot := filepath.Join("deps", topDir, secondDir)
 			t.Run("source directory exists at its destination", func(t *testing.T) {
-				gitTagSource, err := os.Stat(sourceRoot)
+				gitSource, err := os.Stat(sourceRoot)
 				require.NoError(t, err)
-				assert.True(t, gitTagSource.IsDir())
+				assert.True(t, gitSource.IsDir())
 			})
 
 			t.Run(".git directory was removed", func(t *testing.T) {

@@ -19,6 +19,8 @@ type Git struct {
 	vdmspec.RemoteTemplate
 }
 
+var _ vdmspec.Remoter = Git{}
+
 // Cache provides the [vdmspec.Remoter.Cache] operations for "git" remote types.
 func (remote Git) Cache() (cachePath string, err error) {
 	tmpCachePath := cache.GetTempCachePath(remote)
@@ -40,11 +42,6 @@ func (remote Git) Cache() (cachePath string, err error) {
 		if err != nil {
 			return "", fmt.Errorf("cloning git repository: %w", err)
 		}
-		defer func() {
-			if rmErr := os.RemoveAll(tmpCachePath); rmErr != nil {
-				err = errors.Join(err, fmt.Errorf("removing temporary cache directory for %q: %w", remote.GetSource(), rmErr))
-			}
-		}()
 
 		remote.OpMsg("Setting specified version...")
 		checkoutCmd := exec.Command("git", "-C", tmpCachePath, "checkout", remote.Version)
@@ -113,12 +110,18 @@ func checkGitAvailable() error {
 func gitClone(src string, dest string) error {
 	err := checkGitAvailable()
 	if err != nil {
-		return fmt.Errorf("remote %q is a git type, but git may not installed/available on PATH: %w", src, err)
+		return fmt.Errorf("remote %q is a git type, but git may not be installed/available on PATH: %w", src, err)
 	}
+
+	// TODO: remove
+	TEST := "/tmp/vdm-tmp"
+	_, statErr := os.Stat(TEST)
+	message.Debugf("home path %q exists? %v", TEST, statErr == nil)
 
 	cloneCmdArgs := []string{"clone", src, dest}
 	message.Debugf("git args: %v", cloneCmdArgs)
 
+	// HOW TF IS THIS WHERE THE TEMP CACHE GOES MISSING
 	cloneCmd := exec.Command("git", cloneCmdArgs...)
 	cloneOutput, err := cloneCmd.CombinedOutput()
 	message.Debugf("git clone command output: %s", string(cloneOutput))
@@ -126,7 +129,9 @@ func gitClone(src string, dest string) error {
 		return fmt.Errorf("cloning remote: exec error '%w', with output: %s", err, string(cloneOutput))
 	}
 
+	// TODO: remove
+	_, statErr = os.Stat(TEST)
+	message.Debugf("home path %q exists? %v", TEST, statErr == nil)
+
 	return nil
 }
-
-var _ vdmspec.Remoter = Git{}

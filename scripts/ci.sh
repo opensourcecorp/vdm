@@ -30,6 +30,7 @@ if ! go run github.com/kisielk/errcheck@latest ./... ; then
 fi
 
 printf '>> Go test\n'
+go clean -testcache
 if ! go test -cover -coverprofile=./cover.out ./... ; then
   printf '>>> Failed go-test check\n' > /dev/stderr
   failures+=('go-test')

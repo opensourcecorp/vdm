@@ -24,8 +24,6 @@ func SetupVDMForTest(t *testing.T) (vdmHome string, cleanup func()) {
 		t.Errorf("instantiating vdm paths for test: %v", err)
 	}
 
-	// This runs as part of the outer test container, because we want to inspect
-	// the filesystem state as we go
 	cleanup = func() {
 		err := os.RemoveAll(vdmHome)
 		if err != nil {

@@ -3,10 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
-	"github.com/opensourcecorp/vdm/cmd/vars"
-	"github.com/opensourcecorp/vdm/internal/archive/cache"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdminit"
 	"github.com/spf13/cobra"
@@ -28,7 +25,7 @@ var rootFlagValues rootFlags
 
 // Flag name keys
 const (
-	specFilePathFlagKey string = "specfile-path"
+	specFilePathFlagKey string = "specfile"
 	debugFlagKey        string = "debug"
 )
 
@@ -45,7 +42,7 @@ func newRootCommand() *cobra.Command {
 		RunE:             executeRootCommand,
 	}
 
-	cmd.PersistentFlags().StringVar(&rootFlagValues.SpecFilePath, specFilePathFlagKey, "./vdm.yaml", "Path to vdm specfile")
+	cmd.PersistentFlags().StringVarP(&rootFlagValues.SpecFilePath, specFilePathFlagKey, "f", "./vdm.yaml", "Path to vdm specfile")
 	err = viper.BindPFlag(specFilePathFlagKey, cmd.PersistentFlags().Lookup(specFilePathFlagKey))
 	if err != nil {
 		message.Fatalf("internal error: unable to bind state of flag --%s: %v", specFilePathFlagKey, err)
@@ -76,22 +73,7 @@ func executeRootCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing vdm: %w", err)
 	}
 
-	vdmCacheDir, err := vars.GetVDMCacheDir()
-	if err != nil {
-		return fmt.Errorf("determining vdm cache directory while running root command: %w", err)
-	}
-
-	err = os.MkdirAll(vdmCacheDir, 0755)
-	if err != nil {
-		return fmt.Errorf("creating vdm cache directory %q: %w", vdmCacheDir, err)
-	}
-
-	err = cache.CreateSumDB()
-	if err != nil {
-		return fmt.Errorf("creating sumdb before any vdm operations: %w", err)
-	}
-
-	return errors.New("You must provide a subcommand to vdm")
+	return errors.New("you must provide a subcommand to vdm")
 }
 
 // Execute wraps the primary execution logic for vdm's root command, and returns
