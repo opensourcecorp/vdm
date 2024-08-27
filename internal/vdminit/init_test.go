@@ -17,9 +17,8 @@ func TestPaths(t *testing.T) {
 	t.Cleanup(cleanup)
 
 	t.Run("env var is set right", func(t *testing.T) {
-		want := filepath.Join(os.TempDir(), "vdm-tmp")
 		got := os.Getenv(vars.VDMHomeEnvVarName)
-		assert.Equal(t, want, got)
+		assert.Regexp(t, `vdm-tmp-\d+`, got)
 	})
 
 	t.Run("vdm cache is then returned as being under the test homedir", func(t *testing.T) {

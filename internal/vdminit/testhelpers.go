@@ -1,6 +1,8 @@
 package vdminit
 
 import (
+	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +18,8 @@ import (
 func SetupVDMForTest(t *testing.T) (vdmHome string, cleanup func()) {
 	t.Helper()
 
-	vdmHome = filepath.Join(os.TempDir(), "vdm-tmp")
+	randID := 100000000000 + rand.Intn(999999999999)
+	vdmHome = filepath.Join(os.TempDir(), fmt.Sprintf("vdm-tmp-%d", randID))
 	t.Setenv(vars.VDMHomeEnvVarName, vdmHome)
 
 	err := Paths()
