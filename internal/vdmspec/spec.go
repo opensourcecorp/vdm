@@ -1,6 +1,7 @@
 package vdmspec
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -11,106 +12,86 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Spec defines the overall structure of the vmd specfile.
-type Spec struct {
-	Remotes []Remote `json:"remotes" yaml:"remotes"`
-}
-
-// Remote defines the structure of each remote configuration in the vdm
-// specfile.
-type Remote struct {
-	Type      string `json:"type,omitempty" yaml:"type,omitempty"`
-	Remote    string `json:"remote" yaml:"remote"`
-	Version   string `json:"version,omitempty" yaml:"version,omitempty"`
-	LocalPath string `json:"local_path" yaml:"local_path"`
-}
-
 const (
-	// MetaFileName is the name of the tracking file that vdm uses to record &
-	// track remote statuses on disk.
-	MetaFileName string = "VDMMETA"
-
-	// GitType represents the string to match against for git remote types.
+	// GitType represents the string to match against for "git" remote types.
 	GitType string = "git"
-	// FileType represents the string to match against for file remote types.
-	FileType string = "file"
+	// ArchiveType represents the string to match against for "archive" remote
+	// types.
+	ArchiveType string = "archive"
+	// LocalType represents the string to match against for "local" "remote"
+	// types.
+	LocalType string = "local"
 )
 
-// MakeMetaFilePath constructs the metafile path that vdm will use to track a
-// remote's state on disk.
-func (r Remote) MakeMetaFilePath() string {
-	metaFilePath := filepath.Join(r.LocalPath, MetaFileName)
-	// TODO: this is brittle, but it's the best I can think of right now
-	if r.Type == FileType {
-		fileDir := filepath.Dir(r.LocalPath)
-		fileName := filepath.Base(r.LocalPath)
-		// converts to e.g. 'VDMMETA_http.proto'
-		metaFilePath = filepath.Join(fileDir, fmt.Sprintf("%s_%s", MetaFileName, fileName))
-	}
-
-	return metaFilePath
+// typeMap is used to house more programmatic access to the various remote
+// types, such as in tests or [Spec.Validate]
+var typeMap = map[string]int{
+	GitType:     0,
+	ArchiveType: 1,
+	LocalType:   2,
 }
 
-// WriteVDMMeta writes the metafile contents to disk, the path of which is
-// determined by [Remote.MakeMetaFilePath].
-func (r Remote) WriteVDMMeta() error {
-	metaFilePath := r.MakeMetaFilePath()
-	vdmMetaContent, err := yaml.Marshal(r)
-	if err != nil {
-		return fmt.Errorf("writing %s: %w", metaFilePath, err)
-	}
-
-	vdmMetaContent = append(vdmMetaContent, []byte("\n")...)
-
-	message.Debugf("writing metadata file to '%s'", metaFilePath)
-	err = os.WriteFile(metaFilePath, vdmMetaContent, 0644)
-	if err != nil {
-		return fmt.Errorf("writing metadata file: %w", err)
-	}
-
-	return nil
+// Spec defines the overall structure of the vmd specfile.
+type Spec struct {
+	Remotes []RemoteTemplate `json:"remotes" yaml:"remotes"`
 }
 
-// GetVDMMeta reads the metafile from disk, and returns it for further
-// processing.
-func (r Remote) GetVDMMeta() (Remote, error) {
-	metaFilePath := r.MakeMetaFilePath()
-	_, err := os.Stat(metaFilePath)
-	if errors.Is(err, os.ErrNotExist) {
-		return Remote{}, nil // this is ok, because it might literally not exist yet
-	} else if err != nil {
-		return Remote{}, fmt.Errorf("couldn't check if %s exists at '%s': %w", MetaFileName, metaFilePath, err)
-	}
-
-	vdmMetaFile, err := os.ReadFile(metaFilePath)
-	if err != nil {
-		message.Debugf("error reading VMDMMETA from disk: %w", err)
-		return Remote{}, fmt.Errorf("there was a problem reading the %s file from '%s': %w", MetaFileName, metaFilePath, err)
-	}
-	message.Debugf("%s contents read:\n%s", MetaFileName, string(vdmMetaFile))
-
-	var vdmMeta Remote
-	err = yaml.Unmarshal(vdmMetaFile, &vdmMeta)
-	if err != nil {
-		message.Debugf("error during %s unmarshal: w", MetaFileName, err)
-		return Remote{}, fmt.Errorf("there was a problem reading the contents of the %s file at '%s': %w", MetaFileName, metaFilePath, err)
-	}
-	message.Debugf("file %s unmarshalled: %+v", MetaFileName, vdmMeta)
-
-	return vdmMeta, nil
+// Remoter defines behavior that different remote types must exhibit
+type Remoter interface {
+	// Cache should retrieve the remote, and cache it as an archive in
+	// VDM_HOME's cache
+	Cache() (string, error)
+	// Sync should unpack the archive from the cache in VDM_HOME to the
+	// specified destination
+	Sync(src, dest string) error
+	// GetRemote should return the [RemoteTemplate.Source] value
+	GetSource() string
+	// GetRemote should return the [RemoteTemplate.Version] value
+	GetVersion() string
+	// GetSumDBKey should concatenate the relevant values from the
+	// [RemoteTemplate] to produce a string value satisfying the primary key
+	// constraint for the sumdb
+	GetSumDBKey() string
 }
 
-// GetSpecFromFile reads the specfile from disk (the path of which is determined
-// by the user-supplied flag value), and returns it for further processing of
-// remotes.
+// RemoteTemplate defines the template structure for each potential remote
+// configuration in the vdm specfile. This struct can be embedded into other
+// remote type structs to provide the common fields between them.
+type RemoteTemplate struct {
+	// Type is the type of Source, e.g. git, archive, file, etc.
+	Type string `json:"type" yaml:"type"`
+	// Source is the fully-qualifed location from which the Remote is retrieved,
+	// e.g. "https://github.com/some-org/some-repo"
+	Source string `json:"source" yaml:"source"`
+	// Version states the version requested from Source, and is then later used
+	// for tracking purposes. Version can be anything supported by the Type
+	// field -- for example, for the "git" Type, this can be a tag, a branch
+	// name, or a commit hash.
+	Version string `json:"version" yaml:"version"`
+	// Destination is the relative or absolute path on disk that Source will be
+	// placed at
+	Destination string `json:"destination" yaml:"destination"`
+	// TryLocalSource helps define behavior driven by the `try-local-sources`
+	// CLI flag, which allows checking for a local version of a
+	// [RemoteTemplate.Source], and falling back to the other Source field if
+	// the local path does not exist. This is especially useful for when you
+	// might be developing one of your Remotes in a nearby directory, and want
+	// to copy over that version of the Remote and not keep pushing-and-pulling
+	// to a Git upstream just to test the changes.
+	TryLocalSource string `json:"try_local_source" yaml:"try_local_source"`
+}
+
+// GetSpecFromFile reads the specfile from disk (the path of which may be
+// determined by the user-supplied flag value), and returns it for further
+// processing of remotes.
 func GetSpecFromFile(specFilePath string) (Spec, error) {
 	specFile, err := os.ReadFile(specFilePath)
 	if err != nil {
-		message.Debugf("error reading specfile from disk: %w", err)
+		message.Debugf("error reading specfile from disk: %v", err)
 		return Spec{}, fmt.Errorf(
 			strings.Join([]string{
-				"there was a problem reading your vdm file from '%s' -- does it not exist?",
-				"Either pass the --spec-file flag, or create one in the default location (details in the README).",
+				"there was a problem reading your vdm file from %q -- does it not exist?",
+				"Either pass the --specfile flag, or create one in the default location (details in the README).",
 				"Error details: %w"},
 				" ",
 			),
@@ -121,21 +102,31 @@ func GetSpecFromFile(specFilePath string) (Spec, error) {
 	message.Debugf("specfile contents read:\n%s", string(specFile))
 
 	var spec Spec
-	err = yaml.Unmarshal(specFile, &spec)
+	specfileExtension := filepath.Ext(specFilePath)
+	switch specfileExtension {
+	case ".yaml", ".yml":
+		message.Debugf("specfile format is YAML")
+		err = yaml.Unmarshal(specFile, &spec)
+	case ".json":
+		message.Debugf("specfile format is JSON")
+		err = json.Unmarshal(specFile, &spec)
+	case ".toml":
+		message.Debugf("specfile format is TOML")
+		err = errors.New("TOML format for vdm specfile is not yet supported")
+	default:
+		err = fmt.Errorf("unsupported specfile extension %q", specfileExtension)
+	}
 	if err != nil {
-		message.Debugf("error during specfile unmarshal: w", err)
-		return Spec{}, fmt.Errorf("there was a problem reading the contents of your vdm spec file: %w", err)
+		message.Debugf("error during specfile %s unmarshal: %v", specfileExtension, err)
+		return Spec{}, fmt.Errorf("there was a problem reading the contents of your vdm specfile %q: %w", specFilePath, err)
 	}
 	message.Debugf("vdmSpecs unmarshalled: %+v", spec)
 
 	return spec, nil
 }
 
-// OpMsg constructs a loggable message outlining the specific operation being
-// performed at the moment
-func (r Remote) OpMsg() string {
-	if r.Version != "" {
-		return fmt.Sprintf("%s@%s --> %s", r.Remote, r.Version, r.LocalPath)
-	}
-	return fmt.Sprintf("%s --> %s", r.Remote, r.LocalPath)
+// OpMsg constructs a loggable message outlining the specific remote details
+// being performed at the moment
+func (r RemoteTemplate) OpMsg(msg string) {
+	message.Infof("%s@%s --> %s: %s", r.Source, r.Version, r.Destination, msg)
 }

@@ -3,17 +3,18 @@ package cmd
 import (
 	"os"
 
+	"github.com/opensourcecorp/vdm/cmd/vars"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/spf13/viper"
 )
 
-// MaybeSetDebug sets the DEBUG environment variable if it was set as a flag by
+// maybeSetDebug sets the DEBUG environment variable if it was set as a flag by
 // the caller.
-func MaybeSetDebug() {
+func maybeSetDebug() {
 	if viper.GetBool(debugFlagKey) {
-		err := os.Setenv("DEBUG", "true")
+		err := os.Setenv(vars.Debug, "true")
 		if err != nil {
-			message.Fatalf("internal error: unable to set environment variable DEBUG")
+			message.Fatalf("internal error: unable to set environment variable %s", vars.Debug)
 		}
 	}
 }

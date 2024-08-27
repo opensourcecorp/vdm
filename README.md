@@ -27,9 +27,9 @@ retrieve them whenever you need them.
 ### Installation
 
 `vdm` can be installed from [its GitHub Releases
-page](https://github.com/opensourcecorp/vdm/releases). There is a zipped binary
-for major platforms & architectures, and those are indicated in the Asset file
-name. For example, if you have an M2 macOS laptop, you would download the
+page](https://github.com/opensourcecorp/vdm/releases). There is a compressed
+binary for major platforms & architectures, and those are indicated in the Asset
+file name. For example, if you have an M2 macOS laptop, you would download the
 `vdm_darwin-arm64.tar.gz` file, and extract it to somewhere on your `$PATH`.
 
 If you have a recent version of the Go toolchain available, you can also install
@@ -43,50 +43,52 @@ go run github.com/opensourcecorp/vdm@<vX.Y.Z|latest> ...
 
 ### Usage
 
-To get started, you'll need a `vdm` spec file, which is just a YAML (or JSON)
+To get started, you'll need a `vdm` specfile, which is just a YAML (or JSON)
 file specifying all your external dependencies along with (usually) their
 revisions & where you want them to live on your filesystem:
 
 ```yaml
 remotes:
 
-  - type:       "git" # the default, and so can be omitted if desired
-    remote:     "https://github.com/opensourcecorp/go-common" # can specify as 'git@...' to use SSH instead
-    local_path: "./deps/go-common"
-    version:    "v0.2.0" # tag example; can also be a branch, commit hash, or the word 'latest'
+  - type:        "git"
+    source:      "https://github.com/opensourcecorp/vdm" # can specify the protocol in any way that you would usually run 'git clone'
+    version:     "v0.2.0" # tag example; can also be a branch, a commit hash, or anything else supported by 'git checkout'
+    destination: "./deps/" # git types are themselves directories, so to prevent duplicating their top-level names you probably want to just specify the root destination
 
-  - type:       "file" # the 'file' type assumes the version is in the remote field itself somehow, so 'version' can be omitted
-    remote:     "https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto"
-    local_path: "./deps/proto/http/http.proto"
+  - type:        "git"
+    source:      "https://github.com/opensourcecorp/osc-infra"
+    version:     "main"
+    destination: "./deps/"
 ```
 
 You can have as many dependency specifications in that array as you want, and
-they can be stored wherever you want. By default, this spec file is called
+they can be stored wherever you want. By default, this specfile is called
 `vdm.yaml` and lives at the calling location (which is probably your repo's
 root), but you can call it whatever you want and point to it using the
-`--spec-file` flag to `vdm`.
+`--specfile|-f` flag to `vdm`.
 
-Once you have a spec file, just run:
+Once you have a specfile, just run:
 
 ```sh
 vdm sync
 ```
 
-and `vdm` will process the spec file, retrieve your dependencies as specified,
-and put them where you told them to go. By default, `vdm sync` also removes the
-local `.git` directories for each `git` remote, so as to not upset your local
-Git tree. If you want to change the version/revision of a remote, just update
-your spec file and run `vdm sync` again.
+and `vdm` will process the specfile, retrieve your dependencies as specified,
+and put them where you told them to go. `vdm sync` also removes the local `.git`
+directories for each `git` remote, so as to not upset your local Git tree. If
+you want to change the version/revision of a remote, just update your specfile
+and run `vdm sync` again.
 
-After running `vdm sync` with the above example spec file, your directory tree
+After running `vdm sync` with the above example specfile, your directory tree
 would look something like this:
 
 ```txt
 ./vdm.yaml
 ./deps/
-    go-common/
+    vdm/
         <stuff in that repo>
-    http.proto
+    osc-infra/
+        <stuff in that repo>
 ```
 
 ## Dependencies
@@ -99,18 +101,8 @@ types. `vdm` will fail with an informative error if it can't find `git` on your
 
 ## A note about auth
 
-`vdm` has zero goals to be an authN/authZ manager. If a remote in your spec file
+`vdm` has zero goals to be an authN/authZ manager. If a remote in your specfile
 depends on a certain auth setup (an SSH key, something for HTTP basic auth like
 a `.netrc` file, an `.npmrc` config file, etc.), that setup is out of `vdm`'s
 scope. If required, you will need to ensure proper auth is configured before
 running `vdm` commands.
-
-## Future work
-
-- Make the sync mechanism more robust, such that if your spec file changes to
-  remove remotes, they'll get cleaned up automatically.
-
-- Add `--keep-git-dir` flag so that `git` remote types don't wipe the `.git`
-  directory at clone-time.
-
-- Support more than just `git` and `file` types, and make `file` better

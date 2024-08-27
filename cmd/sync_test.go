@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/opensourcecorp/vdm/internal/vdmspec"
+	"github.com/opensourcecorp/vdm/internal/vdminit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,52 +17,48 @@ var (
 )
 
 func TestSync(t *testing.T) {
-	spec, err := vdmspec.GetSpecFromFile(testSpecFilePath)
-	require.NoError(t, err)
+	// This runs as part of the outer test container, because we want to inspect
+	// the filesystem state as we go
+	_, cleanup := vdminit.SetupVDMForTest(t)
+	t.Cleanup(cleanup)
 
-	// Need to override for test
-	RootFlagValues.SpecFilePath = testSpecFilePath
-	err = sync()
-	require.NoError(t, err)
-
-	// defer t.Cleanup(func() {
-	// 	for _, remote := range spec.Remotes {
-	// 		err := os.RemoveAll(remote.LocalPath)
-	// 		require.NoError(t, err)
-	// 	}
-	// })
-
-	t.Run("SyncGit", func(t *testing.T) {
-		t.Run("spec[0] used a tag", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[0].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "v0.2.0", vdmMeta.Version)
-		})
-
-		t.Run("spec[1] used 'latest'", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[1].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "latest", vdmMeta.Version)
-		})
-
-		t.Run("spec[2] used a branch", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[2].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "main", vdmMeta.Version)
-		})
-
-		t.Run("spec[3] used a hash", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[3].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "2e6657f5ac013296167c4dd92fbb46f0e3dbdc5f", vdmMeta.Version)
-		})
+	cmd := newRootCommand()
+	cmd.SetArgs([]string{
+		"--debug",
+		"--specfile", testSpecFilePath,
+		"sync",
 	})
 
-	t.Run("SyncFile", func(t *testing.T) {
-		t.Run("spec[4] had an implicit version", func(t *testing.T) {
-			vdmMeta, err := spec.Remotes[4].GetVDMMeta()
-			require.NoError(t, err)
-			assert.Equal(t, "", vdmMeta.Version)
-		})
+	t.Run("sync works without throwing any errors", func(t *testing.T) {
+		err := cmd.Execute()
+		assert.NoError(t, err)
+	})
+
+	t.Run("filesytem state is as expected", func(t *testing.T) {
+		expectedGitDirs := map[string]string{
+			"git-tag":    "vdm",
+			"git-branch": "osc-infra",
+			"git-hash":   "go-common",
+		}
+		for topDir, secondDir := range expectedGitDirs {
+			sourceRoot := filepath.Join("deps", topDir, secondDir)
+			t.Run("source directory exists at its destination", func(t *testing.T) {
+				gitSource, err := os.Stat(sourceRoot)
+				require.NoError(t, err)
+				assert.True(t, gitSource.IsDir())
+			})
+
+			t.Run(".git directory was removed", func(t *testing.T) {
+				dotGitDir := filepath.Join(sourceRoot, ".git")
+				_, err := os.Stat(dotGitDir)
+				assert.ErrorIs(t, err, os.ErrNotExist)
+			})
+
+			t.Run("a known file in the remote exists, and is a file", func(t *testing.T) {
+				readmePath := filepath.Join(sourceRoot, "README.md")
+				_, err := os.Stat(readmePath)
+				assert.NoError(t, err)
+			})
+		}
 	})
 }

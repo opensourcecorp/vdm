@@ -1,16 +1,18 @@
-// Package message controls message printing. THis isn't a "logging" package per
+// Package message controls message printing. This isn't a "logging" package per
 // se, but adds some niceties for log-like needs.
 package message
 
 import (
 	"fmt"
 	"os"
+
+	"github.com/opensourcecorp/vdm/cmd/vars"
 )
 
 // Debugf prints out debug-level information messages with a formatting
 // directive.
 func Debugf(format string, args ...any) {
-	if os.Getenv("DEBUG") != "" {
+	if os.Getenv(vars.Debug) != "" {
 		fmt.Printf("DEBUG: "+format+"\n", args...)
 	}
 }
@@ -18,7 +20,7 @@ func Debugf(format string, args ...any) {
 // Infof prints out debug-level information messages with a formatting
 // directive.
 func Infof(format string, args ...any) {
-	fmt.Printf(format+"\n", args...)
+	fmt.Printf("INFO: "+format+"\n", args...)
 }
 
 // Warnf prints out debug-level information messages with a formatting

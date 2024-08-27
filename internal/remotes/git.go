@@ -7,34 +7,93 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/opensourcecorp/vdm/internal/archive"
+	"github.com/opensourcecorp/vdm/internal/archive/cache"
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 )
 
-// SyncGit is the root of the sync operations for "git" remote types.
-func SyncGit(remote vdmspec.Remote) error {
-	err := gitClone(remote)
+// Git defines the git remote type, and implements the [vdmspec.Remoter]
+// interface.
+type Git struct {
+	vdmspec.RemoteTemplate
+}
+
+var _ vdmspec.Remoter = Git{}
+
+// Cache provides the [vdmspec.Remoter.Cache] operations for "git" remote types.
+func (remote Git) Cache() (cachePath string, err error) {
+	tmpCachePath := cache.GetTempCachePath(remote)
+	message.Debugf("tmpCachePath: %q", tmpCachePath)
+	defer func() {
+		if rmErr := os.RemoveAll(filepath.Dir(tmpCachePath)); rmErr != nil {
+			err = errors.Join(err, fmt.Errorf("removing temporary cache path %q: %w", tmpCachePath, rmErr))
+		}
+	}()
+
+	remoteAlreadyInSumDB, err := cache.CheckIfRemoteInSumDB(remote)
 	if err != nil {
-		return fmt.Errorf("cloing remote: %w", err)
+		return "", fmt.Errorf("checking if remote %q already in sumdb: %w", remote.GetSumDBKey(), err)
 	}
 
-	if remote.Version != "latest" {
-		message.Infof("%s: Setting specified version...", remote.OpMsg())
-		checkoutCmd := exec.Command("git", "-C", remote.LocalPath, "checkout", remote.Version)
+	if !remoteAlreadyInSumDB {
+		remote.OpMsg("Retrieving...")
+		err = gitClone(remote.Source, tmpCachePath)
+		if err != nil {
+			return "", fmt.Errorf("cloning git repository: %w", err)
+		}
+
+		remote.OpMsg("Setting specified version...")
+		checkoutCmd := exec.Command("git", "-C", tmpCachePath, "checkout", remote.Version)
 		checkoutOutput, err := checkoutCmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
+			return "", fmt.Errorf("error checking out specified revision: exec error '%w', with output: %s", err, string(checkoutOutput))
+		}
+
+		message.Debugf("removing .git dir for local path %q", tmpCachePath)
+		dotGitPath := filepath.Join(tmpCachePath, ".git")
+		err = os.RemoveAll(dotGitPath)
+		if err != nil {
+			return "", fmt.Errorf("removing directory %q: %w", dotGitPath, err)
+		}
+
+		cachePath, err = cache.AddRemote(remote, tmpCachePath)
+		if err != nil {
+			return "", fmt.Errorf("caching git remote %q: %w", remote.Source, err)
+		}
+	} else {
+		remote.OpMsg("Remote found in local cache; restoring...")
+		cachePath, err = cache.GetPersistentCacheFilePath(remote)
+		if err != nil {
+			return "", fmt.Errorf("getting existing cache path for remote %q: %w", remote.GetSumDBKey(), err)
 		}
 	}
 
-	message.Debugf("removing .git dir for local path '%s'", remote.LocalPath)
-	dotGitPath := filepath.Join(remote.LocalPath, ".git")
-	err = os.RemoveAll(dotGitPath)
-	if err != nil {
-		return fmt.Errorf("removing directory %s: %w", dotGitPath, err)
-	}
+	return cachePath, err
+}
 
+// Sync provides the [vdmspec.Remoter.Sync] operations for "git" remote types.
+func (remote Git) Sync(src, dest string) error {
+	err := archive.ExtractTGZArchive(src, dest)
+	if err != nil {
+		return fmt.Errorf("syncing git cache for remote %q: %w", remote.GetSource(), err)
+	}
 	return nil
+}
+
+// GetSource returns the Source field.
+func (remote Git) GetSource() string {
+	return remote.Source
+}
+
+// GetVersion returns the Version field.
+func (remote Git) GetVersion() string {
+	return remote.Version
+}
+
+// GetSumDBKey returns the Source & Version fields, concatenated with an '@'.
+func (remote Git) GetSumDBKey() string {
+	return fmt.Sprintf("%s@%s", remote.Source, remote.Version)
 }
 
 func checkGitAvailable() error {
@@ -48,27 +107,18 @@ func checkGitAvailable() error {
 	return nil
 }
 
-func gitClone(remote vdmspec.Remote) error {
+func gitClone(src string, dest string) error {
 	err := checkGitAvailable()
 	if err != nil {
-		return fmt.Errorf("remote '%s' is a git type, but git may not installed/available on PATH: %w", remote.Remote, err)
+		return fmt.Errorf("remote %q is a git type, but git may not be installed/available on PATH: %w", src, err)
 	}
 
-	// If users want "latest", then we can just do a depth-one clone and
-	// skip the checkout operation. But if they want non-latest, we need the
-	// full history to be able to find a specified revision
-	var cloneCmdArgs []string
-	if remote.Version == "latest" {
-		message.Debugf("%s: version specified as 'latest', so making shallow clone and skipping separate checkout operation", remote.OpMsg())
-		cloneCmdArgs = []string{"clone", "--depth=1", remote.Remote, remote.LocalPath}
-	} else {
-		message.Debugf("%s: version specified as NOT latest, so making regular clone and will make separate checkout operation", remote.OpMsg())
-		cloneCmdArgs = []string{"clone", remote.Remote, remote.LocalPath}
-	}
+	cloneCmdArgs := []string{"clone", src, dest}
+	message.Debugf("git args: %v", cloneCmdArgs)
 
-	message.Infof("%s: Retrieving...", remote.OpMsg())
 	cloneCmd := exec.Command("git", cloneCmdArgs...)
 	cloneOutput, err := cloneCmd.CombinedOutput()
+	message.Debugf("git clone command output: %s", string(cloneOutput))
 	if err != nil {
 		return fmt.Errorf("cloning remote: exec error '%w', with output: %s", err, string(cloneOutput))
 	}

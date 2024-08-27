@@ -8,6 +8,7 @@ all: ci package package-debian
 
 ci: clean
 	@bash ./scripts/ci.sh
+	@make -s clean
 
 # test is just an alias for ci
 test: ci
@@ -38,15 +39,14 @@ clean:
 		*cache* \
 		.*cache* \
 		./build/ \
-		./dist/zipped/*.tar.gz \
-		./dist/zipped/*.zip \
+		./dist/compressed/*.tar.gz \
+		./dist/compressed/*.zip \
 		./dist/debian/vdm.deb \
 		*.out
 	@sudo rm -rf ./dist/debian/vdm/usr
-# TODO: until I sort out the tests to write test data consistently, these deps/
-# directories etc. can kind of show up anywhere
+# TODO: until I (maybe) sort out the tests to write test data consistently,
+# these deps/ directories etc. can kind of show up anywhere
 	@find . -type d -name '*deps*' -exec rm -rf {} +
-	@find . -type f -name '*VDMMETA*' -delete
 
 bump-versions: clean
 	@bash ./scripts/bump-versions.sh "$${old_version:-}"
@@ -63,3 +63,9 @@ add-local-symlinks:
 	@mkdir -p "$${HOME}"/.local/bin
 	@ln -fs $$(realpath build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME)) "$${HOME}"/.local/bin/$(BINNAME)
 	@printf 'Symlinked vdm to %s\n' "$${HOME}"/.local/bin/$(BINNAME)
+
+install:
+	@go install ./...
+
+docs:
+	@go run golang.org/x/pkgsite/cmd/pkgsite@latest -open .

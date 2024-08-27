@@ -13,44 +13,39 @@ import (
 func (spec Spec) Validate() error {
 	var allErrors []error
 
+	protocolRegex := regexp.MustCompile(`(http(s?)://|git://|git@|ftp(s?))`)
 	for remoteIndex, remote := range spec.Remotes {
-		// Remote field
-		message.Debugf("Index #%d: validating field 'Remote' for %+v", remoteIndex, remote)
-		if len(remote.Remote) == 0 {
-			allErrors = append(allErrors, errors.New("all 'remote' fields must be non-zero length"))
+		// Source field
+		message.Debugf("Index #%d: validating field 'Source' for %+v", remoteIndex, remote)
+		if len(remote.Source) == 0 {
+			allErrors = append(allErrors, errors.New("all 'source' fields must be non-zero length"))
 		}
-		protocolRegex := regexp.MustCompile(`(http(s?)://|git://|git@)`)
-		if !protocolRegex.MatchString(remote.Remote) {
+		if !protocolRegex.MatchString(remote.Source) {
 			allErrors = append(
 				allErrors,
-				fmt.Errorf("remote #%d provided as '%s', but all 'remote' fields must begin with a protocol specifier or other valid prefix (e.g. 'https://', '(user|git)@', etc.)", remoteIndex, remote.Remote),
+				fmt.Errorf("remote #%d provided as %q, but all 'source' fields must begin with a protocol specifier or other valid prefix (e.g. 'https://', '(user|git)@', etc.)", remoteIndex, remote.Source),
 			)
 		}
 
 		// Version field
 		message.Debugf("Index #%d: validating field 'Version' for %+v", remoteIndex, remote)
-		if remote.Type == GitType && len(remote.Version) == 0 {
-			allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length. If you don't care about the version (even though you probably should), then use 'latest'"))
-		}
-		if remote.Type == FileType && len(remote.Version) > 0 {
-			message.Warnf("NOTE: Remote #%d '%s' specified as type '%s', which does not take explicit version info (you provided '%s'); ignoring version field", remoteIndex, remote.Remote, remote.Type, remote.Version)
+		if remote.Type == GitType && remote.Version == "" {
+			allErrors = append(allErrors, errors.New("all 'version' fields for the 'git' remote type must be non-zero length"))
 		}
 
-		// LocalPath field
-		message.Debugf("Index #%d: validating field 'LocalPath' for %+v", remoteIndex, remote)
-		if len(remote.LocalPath) == 0 {
-			allErrors = append(allErrors, errors.New("all 'local_path' fields must be non-zero length"))
+		// Destination field
+		message.Debugf("Index #%d: validating field 'Destination' for %+v", remoteIndex, remote)
+		if len(remote.Destination) == 0 {
+			allErrors = append(allErrors, errors.New("all 'destination' fields must be non-zero length"))
 		}
 
 		// Type field
 		message.Debugf("Index #%d: validating field 'Type' for %+v", remoteIndex, remote)
-		typeMap := map[string]int{
-			GitType:  1,
-			"":       2, // also git
-			FileType: 3,
+		if remote.Type == "" {
+			allErrors = append(allErrors, errors.New("all remotes must specify a 'type' field"))
 		}
 		if _, ok := typeMap[remote.Type]; !ok {
-			allErrors = append(allErrors, fmt.Errorf("unrecognized remote type '%s'", remote.Type))
+			allErrors = append(allErrors, fmt.Errorf("unrecognized remote type %q", remote.Type))
 		}
 	}
 
@@ -58,7 +53,7 @@ func (spec Spec) Validate() error {
 		for _, err := range allErrors {
 			message.Errorf("validation failure: %s", err.Error())
 		}
-		return fmt.Errorf("%d validation failure(s) found in your vdm spec file", len(allErrors))
+		return fmt.Errorf("%d validation failure(s) found in your vdm specfile", len(allErrors))
 	}
 	return nil
 }

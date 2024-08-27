@@ -1,4 +1,2 @@
-/*
-Package cmd calls the implementation logic for vdm.
-*/
+// Package cmd calls the implementation logic for vdm.
 package cmd

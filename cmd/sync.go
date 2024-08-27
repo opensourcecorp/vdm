@@ -1,80 +1,84 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/opensourcecorp/vdm/internal/message"
 	"github.com/opensourcecorp/vdm/internal/remotes"
+	"github.com/opensourcecorp/vdm/internal/vdminit"
 	"github.com/opensourcecorp/vdm/internal/vdmspec"
 	"github.com/spf13/cobra"
 )
 
-var syncCmd = &cobra.Command{
-	Use:   "sync",
-	Short: "Sync remotes based on specfile",
-	RunE:  syncExecute,
+func newSyncCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "sync",
+		Short: "Sync remotes based on specfile",
+		RunE:  executeSyncSubCommand,
+	}
+
+	return cmd
 }
 
-func syncExecute(_ *cobra.Command, _ []string) error {
-	MaybeSetDebug()
+func executeSyncSubCommand(_ *cobra.Command, _ []string) error {
+	maybeSetDebug()
+
+	err := vdminit.Paths()
+	if err != nil {
+		return fmt.Errorf("initializing vdm: %w", err)
+	}
+
 	if err := sync(); err != nil {
 		return fmt.Errorf("executing sync command: %w", err)
 	}
+
 	return nil
 }
 
 // sync does the heavy lifting to ensure that the local directory tree(s) match
 // the desired state as defined in the specfile.
 func sync() error {
-	spec, err := vdmspec.GetSpecFromFile(RootFlagValues.SpecFilePath)
+	spec, err := vdmspec.GetSpecFromFile(rootFlagValues.SpecFilePath)
 	if err != nil {
-		return fmt.Errorf("getting specs from spec file: %w", err)
+		return fmt.Errorf("getting specs from specfile: %w", err)
 	}
 
 	err = spec.Validate()
 	if err != nil {
-		return fmt.Errorf("your vdm spec file is malformed: %w", err)
+		return fmt.Errorf("your vdm specfile is malformed: %w", err)
 	}
 
-SpecLoop:
 	for _, remote := range spec.Remotes {
-		// process stored vdm metafile so we know what operations to actually
-		// perform for existing directories
-		vdmMeta, err := remote.GetVDMMeta()
-		if err != nil {
-			return fmt.Errorf("getting vdm metadata file for sync: %w", err)
-		}
-
-		if vdmMeta == (vdmspec.Remote{}) {
-			message.Infof("%s: %s not found at local path, will be created", remote.OpMsg(), vdmspec.MetaFileName)
-		} else {
-			if vdmMeta.Version != remote.Version && vdmMeta.Remote != remote.Remote {
-				message.Infof("%s: Will change '%s' from current local version spec '%s' to '%s'...", remote.OpMsg(), remote.Remote, vdmMeta.Version, remote.Version)
-				panic("not implemented")
-			}
-			message.Infof("%s: version unchanged in spec file, skipping", remote.OpMsg())
-			continue SpecLoop
-		}
-
+		var determinedRemote vdmspec.Remoter
 		switch remote.Type {
-		case vdmspec.GitType, "":
-			if err := remotes.SyncGit(remote); err != nil {
-				return fmt.Errorf("syncing git remote: %w", err)
-			}
-		case vdmspec.FileType:
-			if err := remotes.SyncFile(remote); err != nil {
-				return fmt.Errorf("syncing file remote: %w", err)
-			}
+		case vdmspec.GitType:
+			determinedRemote = remotes.Git{RemoteTemplate: remote}
+		case vdmspec.ArchiveType:
+			return errors.New("cannot process 'archive' remote types, as they are not yet fully implemented")
+		case vdmspec.LocalType:
+			return errors.New("cannot process 'local' remote types, as they are not yet fully implemented")
 		default:
-			return fmt.Errorf("unrecognized remote type '%s'", remote.Type)
+			return fmt.Errorf("unrecognized remote type %q", remote.Type)
 		}
 
-		err = remote.WriteVDMMeta()
+		cachePath, err := determinedRemote.Cache()
 		if err != nil {
-			return fmt.Errorf("could not write %s file to disk: %w", vdmspec.MetaFileName, err)
+			return fmt.Errorf("caching %q remote: %w", remote.Type, err)
 		}
 
-		message.Infof("%s: Done.", remote.OpMsg())
+		absDestination, err := filepath.Abs(remote.Destination)
+		if err != nil {
+			return fmt.Errorf("determining abspath of remote's destination %q: %w", remote.Destination, err)
+		}
+
+		err = determinedRemote.Sync(cachePath, absDestination)
+		if err != nil {
+			return fmt.Errorf("syncing %q remote: %w", remote.Type, err)
+		}
+
+		remote.OpMsg("Done.")
 	}
 
 	message.Infof("All done!")

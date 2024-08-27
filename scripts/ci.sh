@@ -11,19 +11,26 @@ if ! go vet ./... ; then
   failures+=('go-vet')
 fi
 
-printf '>> Go linter\n'
-if ! go run github.com/mgechev/revive@latest --set_exit_status ./... ; then
-  printf '>>> Failed go-lint\n' > /dev/stderr
-  failures+=('go-lint')
+printf '>> Go linter (staticcheck)\n'
+if ! go run honnef.co/go/tools/cmd/staticcheck@latest ./... ; then
+  printf '>>> Failed go-lint-staticcheck\n' > /dev/stderr
+  failures+=('go-lint-staticcheck')
 fi
 
-printf '>> Go error checker\n'
+printf '>> Go linter (revive)\n'
+if ! go run github.com/mgechev/revive@latest --set_exit_status ./... ; then
+  printf '>>> Failed go-lint-revive\n' > /dev/stderr
+  failures+=('go-lint-revive')
+fi
+
+printf '>> Go linter (errcheck)\n'
 if ! go run github.com/kisielk/errcheck@latest ./... ; then
-  printf '>>> Failed go-error-check\n' > /dev/stderr
-  failures+=('go-error-check')
+  printf '>>> Failed go-lint-errcheck\n' > /dev/stderr
+  failures+=('go-lint-errcheck')
 fi
 
 printf '>> Go test\n'
+go clean -testcache
 if ! go test -cover -coverprofile=./cover.out ./... ; then
   printf '>>> Failed go-test check\n' > /dev/stderr
   failures+=('go-test')
@@ -36,7 +43,8 @@ if ! make -s package ; then
 fi
 
 if [[ "${#failures[@]}" -gt 0 ]] ; then
-  printf '> One or more checks failed, see output above\n' > /dev/stderr
+  printf '> The following checks failed -- logs for each are above\n' > /dev/stderr
+  printf '%s\n' "${failures[@]}"
   exit 1
 fi
 

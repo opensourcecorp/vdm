@@ -1,72 +1,86 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
 	"github.com/opensourcecorp/vdm/internal/message"
+	"github.com/opensourcecorp/vdm/internal/vdminit"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 // !!! DO NOT TOUCH, the version-bumper script handles updating this !!!
-const vdmVersion string = "v0.2.1"
+const vdmVersion string = "v0.3.0"
 
-var rootCmd = cobra.Command{
-	Use:              "vdm",
-	Short:            "vdm -- a Versioned-Dependency Manager",
-	Long:             "vdm is used to manage arbitrary remote dependencies",
-	TraverseChildren: true,
-	Version:          vdmVersion,
-	Run: func(cmd *cobra.Command, args []string) {
-		MaybeSetDebug()
-		if len(args) == 0 {
-			err := cmd.Help()
-			if err != nil {
-				message.Fatalf("failed to print help message, somehow")
-			}
-			os.Exit(0)
-		}
-	},
-}
-
+// rootFlags defines the CLI flags for the root command.
 type rootFlags struct {
 	SpecFilePath string
 	Debug        bool
 }
 
-// RootFlagValues contains an initalized [rootFlags] struct with populated
+// rootFlagValues contains an initalized [rootFlags] struct with populated
 // values.
-var RootFlagValues rootFlags
+var rootFlagValues rootFlags
 
 // Flag name keys
 const (
-	specFilePathFlagKey string = "specfile-path"
+	specFilePathFlagKey string = "specfile"
 	debugFlagKey        string = "debug"
 )
 
-func init() {
+func newRootCommand() *cobra.Command {
 	var err error
-
-	rootCmd.PersistentFlags().StringVar(&RootFlagValues.SpecFilePath, specFilePathFlagKey, "./vdm.yaml", "Path to vdm specfile")
-	err = viper.BindPFlag(specFilePathFlagKey, rootCmd.PersistentFlags().Lookup(specFilePathFlagKey))
-	if err != nil {
-		message.Fatalf("internal error: unable to bind state of flag --%s", specFilePathFlagKey)
+	cmd := &cobra.Command{
+		Use:              "vdm",
+		Short:            "vdm -- a Versioned-Dependency Manager",
+		Long:             "vdm is used to manage retrieval of arbitrary remote dependencies",
+		TraverseChildren: true,
+		Version:          vdmVersion,
+		SilenceUsage:     true,
+		SilenceErrors:    true,
+		RunE:             executeRootCommand,
 	}
 
-	rootCmd.PersistentFlags().BoolVar(&RootFlagValues.Debug, debugFlagKey, false, "Show debug messages during runtime")
-	err = viper.BindPFlag(debugFlagKey, rootCmd.PersistentFlags().Lookup(debugFlagKey))
+	cmd.PersistentFlags().StringVarP(&rootFlagValues.SpecFilePath, specFilePathFlagKey, "f", "./vdm.yaml", "Path to vdm specfile")
+	err = viper.BindPFlag(specFilePathFlagKey, cmd.PersistentFlags().Lookup(specFilePathFlagKey))
 	if err != nil {
-		message.Fatalf("internal error: unable to bind state of flag --%s", debugFlagKey)
+		message.Fatalf("internal error: unable to bind state of flag --%s: %v", specFilePathFlagKey, err)
 	}
 
-	rootCmd.AddCommand(syncCmd)
+	cmd.PersistentFlags().BoolVar(&rootFlagValues.Debug, debugFlagKey, false, "Show debug messages during runtime")
+	err = viper.BindPFlag(debugFlagKey, cmd.PersistentFlags().Lookup(debugFlagKey))
+	if err != nil {
+		message.Fatalf("internal error: unable to bind state of flag --%s: %v", debugFlagKey, err)
+	}
+
+	cmd.AddCommand(newSyncCommand())
+
+	return cmd
+}
+
+func executeRootCommand(cmd *cobra.Command, args []string) error {
+	maybeSetDebug()
+	if len(args) == 0 {
+		err := cmd.Help()
+		if err != nil {
+			return errors.New("failed to print help message, somehow")
+		}
+	}
+
+	err := vdminit.Paths()
+	if err != nil {
+		return fmt.Errorf("initializing vdm: %w", err)
+	}
+
+	return errors.New("you must provide a subcommand to vdm")
 }
 
 // Execute wraps the primary execution logic for vdm's root command, and returns
 // any errors encountered to the caller.
 func Execute() error {
-	if err := rootCmd.Execute(); err != nil {
+	cmd := newRootCommand()
+	if err := cmd.Execute(); err != nil {
 		return fmt.Errorf("executing root command: %w", err)
 	}
 
