@@ -7,7 +7,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
-	modernc.org/sqlite v1.32.0
+	modernc.org/sqlite v1.31.1
 )
 
 require (
